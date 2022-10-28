@@ -1,4 +1,4 @@
-import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Message, Role, User } from 'discordeno';
+import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from 'discordeno';
 import { setupCacheEdits } from './setupCacheEdits';
 import { setupCacheRemovals } from './setupCacheRemovals';
 
@@ -31,13 +31,6 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
             set: (value: T['member']) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
-        messages: {
-            channelIDs: Collection<bigint, bigint>;
-            memory: Collection<bigint, T['message']>;
-            get: (id: bigint) => Promise<T['message'] | undefined>;
-            set: (value: T['message']) => Promise<void>;
-            delete: (id: bigint) => Promise<void>;
-        };
         users: {
             memory: Collection<bigint, T['user']>;
             get: (id: bigint) => Promise<T['user'] | undefined>;
@@ -69,7 +62,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         channels: cacheInMemoryDefault,
         members: cacheInMemoryDefault,
         roles: cacheInMemoryDefault,
-        messages: cacheInMemoryDefault,
         ...bot.cache.options.cacheInMemory,
     };
 
@@ -79,20 +71,10 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         channels: cacheOutsideMemoryDefault,
         members: cacheOutsideMemoryDefault,
         roles: cacheOutsideMemoryDefault,
-        messages: cacheOutsideMemoryDefault,
         ...bot.cache.options.cacheOutsideMemory,
     };
 
     const internalBulkRemover = {
-        removeChannel: async function (id: bigint) {
-            // Remove from in memory as well
-            bot.cache.messages.memory.forEach((message) => {
-                if (message.channelId === id) bot.cache.messages.memory.delete(id);
-                bot.cache.messages.channelIDs.delete(id);
-            });
-
-            bot.cache.channels.memory.delete(id);
-        },
         removeRole: async function (id: bigint) {
             // Delete the role itself if it exists
             bot.cache.roles.memory.delete(id);
@@ -118,41 +100,9 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
                 if (member.roles?.includes(id)) member.roles = member.roles.filter((roleID: bigint) => roleID !== id);
             });
         },
-        removeMessages: async function (ids: bigint[]) {
-            const channelID = ids.find((id) => bot.cache.messages.channelIDs.get(id));
-            if (channelID) {
-                const guildID = bot.cache.channels.guildIDs.get(channelID);
-                if (guildID) {
-                    const guild = bot.cache.guilds.memory.get(guildID);
-                    if (guild) {
-                        const channel = guild.channels.get(channelID);
-                        if (channel) for (const id of ids) channel.messages?.delete(id);
-                    }
-                }
-
-                const channel = bot.cache.channels.memory.get(channelID);
-                if (channel) {
-                    for (const id of ids) channel.messages?.delete(id);
-                }
-            }
-
-            for (const id of ids) {
-                // delete directly from memory if stored separately.
-                bot.cache.messages.memory.delete(id);
-                bot.cache.messages.channelIDs.delete(id);
-            }
-        },
         removeGuild: async function (id: bigint) {
             // Remove from memory
             bot.cache.guilds.memory.delete(id);
-
-            // Remove any associated messages
-            bot.cache.messages.memory.forEach((message) => {
-                if (message.guildId === id) {
-                    bot.cache.messages.memory.delete(message.id);
-                    bot.cache.messages.channelIDs.delete(message.id);
-                }
-            });
 
             // Remove any associated channels
             bot.cache.channels.memory.forEach((channel) => {
@@ -182,18 +132,8 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     if (!bot.cache.options.bulk) bot.cache.options.bulk = {};
 
     // Get bulk removers passed by user, data about which internal removers to replace
-    const { removeChannel, removeGuild, removeMessages, removeRole } = bot.cache.options.bulk;
+    const { removeGuild, removeRole } = bot.cache.options.bulk;
     const { replaceInternalBulkRemover } = bot.cache.options.bulk;
-
-    // If user passed bulk.removeChannel else if replaceInternalBulkRemover.channel is not set to true
-    if (removeChannel || !replaceInternalBulkRemover?.channel) {
-        bot.cache.options.bulk.removeChannel = async function (id) {
-            // If replaceInternalBulkRemover.channel is not set to true, run internal channel bulk remover
-            if (!replaceInternalBulkRemover?.channel) await internalBulkRemover.removeChannel(id);
-            // If user passed bulk.removeChannel, run passed bulk remover
-            await removeChannel?.(id);
-        };
-    }
 
     // If user passed bulk.removeRole else if replaceInternalBulkRemover.role is not set to true
     if (removeRole || !replaceInternalBulkRemover?.role) {
@@ -202,16 +142,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id);
             // If user passed bulk.removeRole, run passed bulk remover
             await removeRole?.(id);
-        };
-    }
-
-    // If user passed bulk.removeMessages else if replaceInternalBulkRemover.message is not set to true
-    if (removeMessages || !replaceInternalBulkRemover?.messages) {
-        bot.cache.options.bulk.removeMessages = async function (id) {
-            // If replaceInternalBulkRemover.message is not set to true, run internal messages bulk remover
-            if (!replaceInternalBulkRemover?.messages) await internalBulkRemover.removeMessages(id);
-            // If user passed bulk.removeMessages, run passed bulk remover
-            await removeMessages?.(id);
         };
     }
 
@@ -470,74 +400,8 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         },
     };
 
-    bot.cache.messages = {
-        channelIDs: new Collection<bigint, bigint>(),
-        memory: new Collection<bigint, T['message']>(),
-        get: async function (id: BigString): Promise<T['message'] | undefined> {
-            // Force into bigint form
-            const messageID = BigInt(id);
-
-            // If available in memory, use it.
-            if (options.cacheInMemory?.messages) {
-                // If guilds are cached, messages will be inside them
-                if (options.cacheInMemory?.guilds) {
-                    const channelID = bot.cache.messages.channelIDs.get(messageID);
-                    if (channelID) {
-                        const guildID = bot.cache.channels.guildIDs.get(channelID);
-                        const channel = bot.cache.guilds.memory.get(guildID!)?.channel ?? bot.cache.channels.memory.get(channelID);
-                        if (channel) {
-                            const message = channel.messages.cache.get(messageID);
-                            if (message) return message;
-                        }
-                    }
-                }
-
-                // Check if its in memory outside of guilds
-                if (bot.cache.messages.memory.has(messageID)) {
-                    return bot.cache.messages.memory.get(messageID);
-                }
-            }
-
-            // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.messages || !options.getItem) return;
-
-            const stored = await options.getItem<T['message']>('message', messageID);
-            if (stored && options.cacheInMemory?.messages) bot.cache.messages.memory.set(messageID, stored);
-            return stored;
-        },
-        set: async function (message: T['message']): Promise<void> {
-            if (options.shouldCache?.message && !(await options.shouldCache.message(message))) return;
-
-            // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.messages) {
-                if (options.cacheInMemory?.guilds) {
-                    if (message.channelId) bot.cache.messages.channelIDs.set(message.id, message.channelId);
-
-                    const guildID = bot.cache.messages.channelIDs.get(message.id);
-                    if (guildID) {
-                        const guild = bot.cache.guilds.memory.get(guildID);
-                        if (guild) guild.messages.set(message.id, message);
-                        else console.warn(`[CACHE] Can't cache message(${message.id}) since guild.messages is enabled but a guild (${guildID}) was not found`);
-                    } else console.warn(`[CACHE] Can't cache message(${message.id}) since guild.messages is enabled but a guild id was not found.`);
-                } else bot.cache.messages.memory.set(message.id, message);
-            }
-            // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.messages) if (options.setItem) await options.setItem('message', message);
-        },
-        delete: async function (id: BigString): Promise<void> {
-            // Force id to bigint
-            const messageID = BigInt(id);
-            // Remove from memory
-            bot.cache.messages.memory.delete(messageID);
-            bot.cache.guilds.memory.get(bot.cache.messages.channelIDs.get(messageID)!)?.messages?.delete(messageID);
-            bot.cache.messages.channelIDs.delete(messageID);
-            // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('message', messageID);
-        },
-    };
-
     // MODIFY TRANSFORMERS
-    const { user, role, member, guild, channel, message } = bot.transformers;
+    const { user, role, member, guild, channel } = bot.transformers;
 
     bot.transformers.user = function (_, payload) {
         // Create the object from existing transformer.
@@ -615,7 +479,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     bot.transformers.channel = function (_, payload) {
         // Create the object from existing transformer.
         const old = channel(bot, payload);
-        old.messages = new Collection();
 
         // Filter to desired args
         const args: T['channel'] = {};
@@ -682,29 +545,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    bot.transformers.message = function (_, payload) {
-        // Create the object from existing transformer.
-        const old = message(bot, payload);
-
-        // Filter to desired args
-        const args: T['message'] = {};
-        const keys = Object.keys(old) as (keyof Message)[];
-
-        for (const key of keys) {
-            // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.messages?.includes(key)) args[key] = old[key];
-            // If undesired we skip
-            else if (options.undesiredProps?.messages?.includes(key)) continue;
-            // If message did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.messages?.length) args[key] = old[key];
-        }
-
-        // Add to memory
-        bot.cache.messages.set(args);
-
-        return args;
-    };
-
     setupCacheRemovals(bot);
     setupCacheEdits(bot);
 
@@ -717,7 +557,6 @@ export type ProxyCacheTypes<T extends boolean = true> = {
     channel: T extends true ? Channel : any;
     member: T extends true ? Member : any;
     role: T extends true ? Role : any;
-    message: T extends true ? Message : any;
 };
 
 export interface CreateProxyCacheOptions {
@@ -733,8 +572,6 @@ export interface CreateProxyCacheOptions {
         member?: (member: Member) => Promise<boolean>;
         /** Handler to check whether or not to cache this role. */
         role?: (role: Role) => Promise<boolean>;
-        /** Handler to check whether or not to cache this message. */
-        message?: (message: Message) => Promise<boolean>;
     };
     /** Configure the exact properties you wish to have in each object. */
     desiredProps?: {
@@ -748,8 +585,6 @@ export interface CreateProxyCacheOptions {
         members?: (keyof Member)[];
         /** The properties you want to keep in a role object. */
         roles?: (keyof Role)[];
-        /** The properties you want to keep in a message object. */
-        messages?: (keyof Message)[];
     };
     /** Configure the properties you do NOT want in each object. */
     undesiredProps?: {
@@ -763,8 +598,6 @@ export interface CreateProxyCacheOptions {
         members?: (keyof Member)[];
         /** The properties you do NOT want in a role object. */
         roles?: (keyof Role)[];
-        /** The properties you do NOT want in a message object. */
-        messages?: (keyof Message)[];
     };
     /** Options to choose how the proxy will cache everything.
      *
@@ -780,8 +613,6 @@ export interface CreateProxyCacheOptions {
         members?: boolean;
         /** Whether or not the cache roles. If guilds is enabled, then these are cached inside the guild object.*/
         roles?: boolean;
-        /** Whether or not the cache messages. If channels is enabled, then these are cached inside the channel object.*/
-        messages?: boolean;
         /** Default value for the properties that are not provided inside `cacheInMemory`. */
         default: boolean;
     };
@@ -799,26 +630,20 @@ export interface CreateProxyCacheOptions {
         members?: boolean;
         /** Whether or not to cache roles. */
         roles?: boolean;
-        /** Whether or not to cache messages. */
-        messages?: boolean;
         /** Default value for the properties that are not provided inside `cacheOutsideMemory`. */
         default: boolean;
     };
     /** Handler to get an object from a specific table. */
-    getItem?: <T>(...args: [table: 'guild' | 'channel' | 'role' | 'message' | 'user', id: bigint] | [table: 'member', id: bigint, guildId: bigint]) => Promise<T>;
+    getItem?: <T>(...args: [table: 'guild' | 'channel' | 'role' | 'user', id: bigint] | [table: 'member', id: bigint, guildId: bigint]) => Promise<T>;
     /** Handler to set an object in a specific table. */
-    setItem?: (table: 'guild' | 'channel' | 'role' | 'member' | 'message' | 'user', item: any) => Promise<unknown>;
+    setItem?: (table: 'guild' | 'channel' | 'role' | 'member' | 'user', item: any) => Promise<unknown>;
     /** Handler to delete an object in a specific table. */
-    removeItem?: (...args: [table: 'guild' | 'channel' | 'role' | 'message' | 'user', id: bigint] | [table: 'member', id: bigint, guildId: bigint]) => Promise<unknown>;
+    removeItem?: (...args: [table: 'guild' | 'channel' | 'role' | 'user', id: bigint] | [table: 'member', id: bigint, guildId: bigint]) => Promise<unknown>;
     bulk?: {
-        /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a guild is deleted, you want to make sure all channels, roles, messages and members are removed as well. */
+        /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a guild is deleted, you want to make sure all channels, roles, and members are removed as well. */
         removeGuild?: (id: bigint) => Promise<unknown>;
-        /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a channel is deleted, you want to make sure all messages are removed as well. */
-        removeChannel?: (id: bigint) => Promise<unknown>;
         /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a role is deleted, you want to make sure all members who have this role are edited as well. */
         removeRole?: (id: bigint) => Promise<unknown>;
-        /** Handler used to remove multiple messages. */
-        removeMessages?: (ids: bigint[]) => Promise<unknown>;
         /** Options to choose whether or not to replace internal removers. */
         replaceInternalBulkRemover?: {
             /** Whether or not to replace internal guild remover.
@@ -836,18 +661,6 @@ export interface CreateProxyCacheOptions {
              * By default, the proxy will bulk remove role from memory. You can override this behavior by setting this option to `true`.
              */
             role?: boolean;
-            /** Whether or not to replace internal message remover.
-             *
-             * By default, the proxy will bulk remove message from memory. You can override this behavior by setting this option to `true`.
-             */
-            messages?: boolean;
         };
     };
-}
-
-declare module 'discordeno' {
-    interface Channel {
-        /** The messages that are available in this channel. */
-        messages: Collection<bigint, Message>;
-    }
 }

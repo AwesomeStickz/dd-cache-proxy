@@ -1,8 +1,8 @@
-import { Bot, DiscordChannel, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordMessageDelete, DiscordMessageDeleteBulk, DiscordUnavailableGuild } from 'discordeno';
+import { Bot, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild } from 'discordeno';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
 export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) {
-    const { CHANNEL_DELETE, GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE, MESSAGE_DELETE_BULK } = bot.handlers;
+    const { GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE } = bot.handlers;
 
     bot.handlers.GUILD_DELETE = function (_, data, shardId) {
         const payload = data.d as DiscordUnavailableGuild;
@@ -12,15 +12,6 @@ export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCa
         bot.cache.options.bulk?.removeGuild?.(id);
 
         GUILD_DELETE(bot, data, shardId);
-    };
-
-    bot.handlers.CHANNEL_DELETE = function (_, data, shardId) {
-        const payload = data.d as DiscordChannel;
-        // HANDLER BEFORE DELETING, BECAUSE HANDLER RUNS TRANSFORMER WHICH RE CACHES
-        CHANNEL_DELETE(bot, data, shardId);
-
-        const id = bot.transformers.snowflake(payload.id);
-        bot.cache.options.bulk?.removeChannel?.(id);
     };
 
     bot.handlers.GUILD_MEMBER_REMOVE = function (_, data, shardId) {
@@ -35,35 +26,6 @@ export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCa
         GUILD_BAN_ADD(bot, data, shardId);
 
         bot.cache.members.delete(bot.transformers.snowflake(payload.user.id), bot.transformers.snowflake(payload.guild_id));
-    };
-
-    bot.handlers.MESSAGE_DELETE = function (_, data) {
-        const payload = data.d as DiscordMessageDelete;
-        const id = bot.transformers.snowflake(payload.id);
-
-        // Use .then() strategy to keep this function sync but also no point deleting if its not in cache :bigbrain:
-        bot.cache.messages.get(id).then((message) => {
-            // DON'T RUN INTERNAL HANDLER since internal does not pass `message`
-            bot.events.messageDelete(
-                bot,
-                {
-                    id,
-                    channelId: bot.transformers.snowflake(payload.channel_id),
-                    guildId: payload.guild_id ? bot.transformers.snowflake(payload.guild_id) : undefined,
-                },
-                message
-            );
-
-            bot.cache.messages.delete(id);
-        });
-    };
-
-    bot.handlers.MESSAGE_DELETE_BULK = function (_, data, shardId) {
-        const payload = data.d as DiscordMessageDeleteBulk;
-
-        bot.cache.options.bulk?.removeMessages?.(payload.ids.map((id) => bot.transformers.snowflake(id)));
-
-        MESSAGE_DELETE_BULK(bot, data, shardId);
     };
 
     bot.handlers.GUILD_ROLE_DELETE = function (_, data, shardId) {
