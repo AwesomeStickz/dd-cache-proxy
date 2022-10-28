@@ -1,5 +1,5 @@
 {
-  "name": "cache-proxy",
+  "name": "dd-cache-proxy",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,17 +9,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/discordeno/cache-proxy.git"
+    "url": "git+https://github.com/AwesomeStickz/dd-cache-proxy.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/discordeno/cache-proxy/issues"
+    "url": "https://github.com/AwesomeStickz/dd-cache-proxy/issues"
   },
-  "homepage": "https://github.com/discordeno/cache-proxy#readme",
+  "homepage": "https://github.com/AwesomeStickz/dd-cache-proxy#readme",
   "dependencies": {
-    "discordeno": "^17.0.0",
+    "discordeno": "^17.1.0",
     "typescript": "^4.8.4"
   }
 }
