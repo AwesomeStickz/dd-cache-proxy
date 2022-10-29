@@ -15,20 +15,20 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
             guildIDs: Collection<bigint, bigint>;
             memory: Collection<bigint, T['channel']>;
             get: (id: bigint) => Promise<T['channel'] | undefined>;
-            set: (value: T['channel']) => Promise<void>;
+            set: (value: T['channel'], currentTry?: number) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         roles: {
             guildIDs: Collection<bigint, bigint>;
             memory: Collection<bigint, T['role']>;
             get: (id: bigint) => Promise<T['role'] | undefined>;
-            set: (value: T['role']) => Promise<void>;
+            set: (value: T['role'], currentTry?: number) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         members: {
             memory: Collection<bigint, T['member']>;
             get: (id: bigint, guildId: bigint) => Promise<T['member'] | undefined>;
-            set: (value: T['member']) => Promise<void>;
+            set: (value: T['member'], currentTry?: number) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         users: {
@@ -155,6 +155,8 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         };
     }
 
+    if (!options.maxGuildPropsSetRetries) options.maxGuildPropsSetRetries = 50;
+
     bot.cache.guilds = {
         memory: new Collection<bigint, T['guild']>(),
         get: async function (id: BigString): Promise<T['guild'] | undefined> {
@@ -250,7 +252,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (stored && options.cacheInMemory?.roles) bot.cache.roles.memory.set(roleID, stored);
             return stored;
         },
-        set: async function (role: T['role']): Promise<void> {
+        set: async function (role: T['role'], currentTry = 1): Promise<void> {
             if (options.shouldCache?.role && !(await options.shouldCache.role(role))) return;
 
             // If user wants memory cache, we cache it
@@ -262,6 +264,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
                     if (guildID) {
                         const guild = bot.cache.guilds.memory.get(guildID);
                         if (guild) guild.roles.set(role.id, role);
+                        else if (options.maxGuildPropsSetRetries! > currentTry) setTimeout(() => this.set(role, ++currentTry), 100);
                         else console.warn(`[CACHE] Can't cache role(${role.id}) since guild.roles is enabled but a guild (${guildID}) was not found`);
                     } else console.warn(`[CACHE] Can't cache role(${role.id}) since guild.roles is enabled but a guild id was not found.`);
                 } else bot.cache.roles.memory.set(role.id, role);
@@ -307,7 +310,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (stored && options.cacheInMemory?.members) bot.cache.members.memory.set(BigInt(`${memberID}${guildId}`), stored);
             return stored;
         },
-        set: async function (member: T['member']): Promise<void> {
+        set: async function (member: T['member'], currentTry = 1): Promise<void> {
             if (options.shouldCache?.member && !(await options.shouldCache.member(member))) return;
 
             // If user wants memory cache, we cache it
@@ -316,6 +319,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
                     if (member.guildId) {
                         const guild = bot.cache.guilds.memory.get(member.guildId);
                         if (guild) guild.members.set(member.id, member);
+                        else if (options.maxGuildPropsSetRetries! > currentTry) setTimeout(() => this.set(member, ++currentTry), 100);
                         else console.warn(`[CACHE] Can't cache member(${member.id}) since guild.members is enabled but a guild (${member.guildId}) was not found`);
                     } else console.warn(`[CACHE] Can't cache member(${member.id}) since guild.members is enabled but a guild id was not found.`);
                 } else bot.cache.members.memory.set(BigInt(`${member.id}${member.guildId}`), member);
@@ -369,7 +373,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (stored && options.cacheInMemory?.channels) bot.cache.channels.memory.set(channelID, stored);
             return stored;
         },
-        set: async function (channel: T['channel']): Promise<void> {
+        set: async function (channel: T['channel'], currentTry = 1): Promise<void> {
             if (options.shouldCache?.channel && !(await options.shouldCache.channel(channel))) return;
 
             // If user wants memory cache, we cache it
@@ -381,6 +385,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
                     if (guildID) {
                         const guild = bot.cache.guilds.memory.get(guildID);
                         if (guild) guild.channels.set(channel.id, channel);
+                        else if (options.maxGuildPropsSetRetries! > currentTry) setTimeout(() => this.set(channel, ++currentTry), 100);
                         else console.warn(`[CACHE] Can't cache channel(${channel.id}) since guild.channels is enabled but a guild (${guildID}) was not found`);
                     } else console.warn(`[CACHE] Can't cache channel(${channel.id}) since guild.channels is enabled but a guild id was not found.`);
                 } else bot.cache.channels.memory.set(channel.id, channel);
@@ -663,4 +668,6 @@ export interface CreateProxyCacheOptions {
             role?: boolean;
         };
     };
+    /** Maximum number of retries to do before assuming a guild isn't found in channel, member, role cache. */
+    maxGuildPropsSetRetries?: number;
 }
