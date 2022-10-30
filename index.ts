@@ -408,6 +408,30 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     // MODIFY TRANSFORMERS
     const { user, role, member, guild, channel } = bot.transformers;
 
+    // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
+    bot.transformers.member = function (_, payload, guildId, userId) {
+        // Create the object from existing transformer.
+        const old = member(bot, payload, guildId, userId);
+
+        // Filter to desired args
+        const args: T['member'] = {};
+        const keys = Object.keys(old) as (keyof Member)[];
+
+        for (const key of keys) {
+            // ID is required. Desired props take priority.
+            if (key === 'id' || options.desiredProps?.members?.includes(key)) args[key] = old[key];
+            // If undesired we skip
+            else if (options.undesiredProps?.members?.includes(key)) continue;
+            // If member did not say this is undesired and did not provide any desired props we accept it
+            else if (!options.desiredProps?.members?.length) args[key] = old[key];
+        }
+
+        // Add to memory
+        bot.cache.members.set(args);
+
+        return args;
+    };
+
     bot.transformers.user = function (_, payload) {
         // Create the object from existing transformer.
         const old = user(bot, payload);
@@ -464,6 +488,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         const args: T['guild'] = {
             members: new Collection(),
         };
+
         const keys = Object.keys(old) as (keyof Guild)[];
 
         for (const key of keys) {
@@ -477,6 +502,15 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
         // Add to memory
         bot.cache.guilds.set(args);
+
+        if (payload.guild.members) {
+            for (const member of payload.guild.members) {
+                if (member.user) {
+                    bot.transformers.member(bot, member, old.id, BigInt(member.user.id));
+                    bot.transformers.user(bot, member.user);
+                }
+            }
+        }
 
         return args;
     };
@@ -500,29 +534,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
         // Add to memory
         bot.cache.channels.set(args);
-
-        return args;
-    };
-
-    bot.transformers.member = function (_, payload, guildId, userId) {
-        // Create the object from existing transformer.
-        const old = member(bot, payload, guildId, userId);
-
-        // Filter to desired args
-        const args: T['member'] = {};
-        const keys = Object.keys(old) as (keyof Member)[];
-
-        for (const key of keys) {
-            // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.members?.includes(key)) args[key] = old[key];
-            // If undesired we skip
-            else if (options.undesiredProps?.members?.includes(key)) continue;
-            // If member did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.members?.length) args[key] = old[key];
-        }
-
-        // Add to memory
-        bot.cache.members.set(args);
 
         return args;
     };
