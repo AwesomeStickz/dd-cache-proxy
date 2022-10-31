@@ -139,8 +139,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         };
     }
 
-    if (!options.maxGuildPropsSetRetries) options.maxGuildPropsSetRetries = 50;
-
     bot.cache.guilds = {
         memory: new Collection<bigint, T['guild']>(),
         get: async function (id: BigString): Promise<T['guild'] | undefined> {
@@ -673,6 +671,4 @@ export interface CreateProxyCacheOptions {
             role?: boolean;
         };
     };
-    /** Maximum number of retries to do before assuming a guild isn't found in channel, member, role cache. */
-    maxGuildPropsSetRetries?: number;
 }
