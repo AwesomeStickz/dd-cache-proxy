@@ -1,8 +1,18 @@
-import { Bot, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild } from 'discordeno';
+import { Bot, DiscordChannel, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild } from 'discordeno';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
 export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) {
-    const { GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE } = bot.handlers;
+    const { CHANNEL_DELETE, GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE } = bot.handlers;
+
+    bot.handlers.CHANNEL_DELETE = function (_, data, shardId) {
+        const payload = data.d as DiscordChannel;
+        // HANDLER BEFORE DELETING, BECAUSE HANDLER RUNS TRANSFORMER WHICH RE CACHES
+        CHANNEL_DELETE(bot, data, shardId);
+
+        const id = bot.transformers.snowflake(payload.id);
+
+        bot.cache.channels.delete(id);
+    };
 
     bot.handlers.GUILD_DELETE = function (_, data, shardId) {
         const payload = data.d as DiscordUnavailableGuild;
