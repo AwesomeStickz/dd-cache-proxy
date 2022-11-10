@@ -11,7 +11,7 @@ export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCa
 
         const id = bot.transformers.snowflake(payload.id);
 
-        bot.cache.channels.delete(id);
+        setTimeout(() => bot.cache.channels.delete(id), 5000);
     };
 
     bot.handlers.GUILD_DELETE = function (_, data, shardId) {
