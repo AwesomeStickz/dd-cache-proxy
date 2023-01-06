@@ -492,7 +492,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             const preCacheGuild = {
                 toggles: new GuildToggles(payload.guild),
                 name: payload.guild.name,
-                memberCount: payload.guild.member_count ?? 0,
+                memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
                 shardId: payload.shardId,
                 icon: payload.guild.icon ? bot.utils.iconHashToBigInt(payload.guild.icon) : undefined,
                 channels: new Collection<bigint, T['channel']>(),
@@ -536,6 +536,9 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
             if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
         }
+
+        // Set approximate member count as member count if payload is from API
+        if (payload.guild.approximate_member_count && options.desiredProps?.guilds?.includes('memberCount')) args.memberCount = payload.guild.approximate_member_count;
 
         // Add to memory
         bot.cache.guilds.set(args);
