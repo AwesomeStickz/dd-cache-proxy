@@ -53,8 +53,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     // @ts-ignore why is this failing?
     const bot = rawBot as BotWithProxyCache<T, B>;
 
-    bot.enabledPlugins.add('PROXY_CACHE');
-
     bot.cache.options = options;
 
     if (!bot.cache.options.cacheInMemory) bot.cache.options.cacheInMemory = { default: true };
