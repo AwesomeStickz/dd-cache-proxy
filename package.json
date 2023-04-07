@@ -1,9 +1,10 @@
 {
   "name": "dd-cache-proxy",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple, easy-to-use, highly customizable cache proxy for discordeno which supports in-memory and outside memory caching with custom properties you wish to cache.",
   "main": "dist/index.js",
   "scripts": {
+    "prepare": "tsc",
     "preinstall": "tsc",
     "tsc": "tsc --noEmit --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
