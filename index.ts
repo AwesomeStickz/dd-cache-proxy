@@ -1,4 +1,6 @@
-import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from 'discordeno';
+import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
+import { iconHashToBigInt } from '@discordeno/utils';
+
 import { setupCacheEdits } from './setupCacheEdits';
 import { setupCacheRemovals } from './setupCacheRemovals';
 
@@ -12,7 +14,7 @@ const pendingGuildsData = new Collection<
 >();
 
 export interface ProxyCacheProps<T extends ProxyCacheTypes> {
-    cache: Bot['cache'] & {
+    cache: {
         options: CreateProxyCacheOptions;
         guilds: {
             memory: Collection<bigint, T['guild']>;
@@ -53,7 +55,8 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     // @ts-ignore why is this failing?
     const bot = rawBot as BotWithProxyCache<T, B>;
 
-    bot.cache.options = options;
+    // @ts-ignore
+    bot.cache = { options };
 
     if (!bot.cache.options.cacheInMemory) bot.cache.options.cacheInMemory = { default: true };
     if (!bot.cache.options.cacheOutsideMemory) bot.cache.options.cacheOutsideMemory = { default: false };
@@ -492,7 +495,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
                 name: payload.guild.name,
                 memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
                 shardId: payload.shardId,
-                icon: payload.guild.icon ? bot.utils.iconHashToBigInt(payload.guild.icon) : undefined,
+                icon: payload.guild.icon ? iconHashToBigInt(payload.guild.icon) : undefined,
                 channels: new Collection<bigint, T['channel']>(),
                 roles: new Collection<bigint, T['role']>(),
                 id: guildId,
