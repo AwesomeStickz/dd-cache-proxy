@@ -1,5 +1,5 @@
-import { BigString, Bot, Channel, Collection, Guild, Member, Role, User } from '@discordeno/bot'; // , GuildToggles
-// import { iconHashToBigInt } from '@discordeno/utils';
+import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
+import { iconHashToBigInt } from '@discordeno/utils';
 
 import { setupCacheEdits } from './setupCacheEdits';
 import { setupCacheRemovals } from './setupCacheRemovals';
@@ -323,6 +323,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         set: async function (member: T['member']): Promise<void> {
             if (options.shouldCache?.member && !(await options.shouldCache.member(member))) return;
 
+
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.members) {
                 if (options.cacheInMemory?.guilds) {
@@ -436,7 +437,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     // MODIFY TRANSFORMERS
-    // const { user, role, member, guild, channel } = bot.transformers;
+    const { guild } = bot.transformers;
 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
     bot.transformers.customizers.member = function (_, _payload, member) {
@@ -485,76 +486,76 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    // bot.transformers.guild = function (_, payload) {
-    //     if (options.cacheInMemory?.guilds) {
-    //         // Get the guild id in bigint
-    //         const guildId = bot.transformers.snowflake(payload.guild.id);
-    //         // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
-    //         const preCacheGuild = {
-    //             toggles: new GuildToggles(payload.guild),
-    //             name: payload.guild.name,
-    //             memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
-    //             shardId: payload.shardId,
-    //             icon: payload.guild.icon ? iconHashToBigInt(payload.guild.icon) : undefined,
-    //             channels: new Collection<bigint, T['channel']>(),
-    //             roles: new Collection<bigint, T['role']>(),
-    //             id: guildId,
-    //             // WEIRD EDGE CASE WITH BOT CREATED SERVERS
-    //             ownerId: payload.guild.owner_id ? bot.transformers.snowflake(payload.guild.owner_id) : 0n,
-    //         };
+    bot.transformers.guild = function (_, payload) {
+        if (options.cacheInMemory?.guilds) {
+            // Get the guild id in bigint
+            const guildId = bot.transformers.snowflake(payload.guild.id);
+            // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
+            const preCacheGuild = {
+                toggles: new GuildToggles(payload.guild),
+                name: payload.guild.name,
+                memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
+                shardId: payload.shardId,
+                icon: payload.guild.icon ? iconHashToBigInt(payload.guild.icon) : undefined,
+                channels: new Collection<bigint, T['channel']>(),
+                roles: new Collection<bigint, T['role']>(),
+                id: guildId,
+                // WEIRD EDGE CASE WITH BOT CREATED SERVERS
+                ownerId: payload.guild.owner_id ? bot.transformers.snowflake(payload.guild.owner_id) : 0n,
+            };
 
-    //         // CACHE DIRECT TO MEMORY BECAUSE OTHER TRANSFORMERS NEED THE GUILD IN CACHE
-    //         bot.cache.guilds.memory.set(preCacheGuild.id, preCacheGuild);
-    //     }
+            // CACHE DIRECT TO MEMORY BECAUSE OTHER TRANSFORMERS NEED THE GUILD IN CACHE
+            bot.cache.guilds.memory.set(preCacheGuild.id, preCacheGuild);
+        }
 
-    //     // Create the object from existing transformer.
-    //     const old = guild(bot, payload);
+        // Create the object from existing transformer.
+        const old = guild(bot, payload);
 
-    //     options.shouldCache?.guild?.(old).then((shouldCache) => {
-    //         if (!shouldCache) bot.cache.guilds.memory.delete(old.id);
-    //     });
+        options.shouldCache?.guild?.(old).then((shouldCache) => {
+            if (!shouldCache) bot.cache.guilds.memory.delete(old.id);
+        });
 
-    //     // Filter to desired args
-    //     const args: T['guild'] = {
-    //         members: new Collection(),
-    //     };
+        // Filter to desired args
+        const args: T['guild'] = {
+            members: new Collection(),
+        };
 
-    //     const keys = Object.keys(old) as (keyof Guild)[];
+        const keys = Object.keys(old) as (keyof Guild)[];
 
-    //     for (const key of keys) {
-    //         // ID is required. Desired props take priority.
-    //         if (key === 'id' || options.desiredProps?.guilds?.includes(key)) args[key] = old[key];
-    //         // If undesired we skip
-    //         else if (options.undesiredProps?.guilds?.includes(key)) continue;
-    //         // If guild did not say this is undesired and did not provide any desired props we accept it
-    //         else if (!options.desiredProps?.guilds?.length) args[key] = old[key];
-    //     }
+        for (const key of keys) {
+            // ID is required. Desired props take priority.
+            if (key === 'id' || options.desiredProps?.guilds?.includes(key)) args[key] = old[key];
+            // If undesired we skip
+            else if (options.undesiredProps?.guilds?.includes(key)) continue;
+            // If guild did not say this is undesired and did not provide any desired props we accept it
+            else if (!options.desiredProps?.guilds?.length) args[key] = old[key];
+        }
 
-    //     const pendingGuildData = pendingGuildsData.get(old.id);
+        const pendingGuildData = pendingGuildsData.get(old.id);
 
-    //     if (pendingGuildData) {
-    //         if (pendingGuildData.channels?.size) old.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
-    //         if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
-    //         if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
-    //     }
+        if (pendingGuildData) {
+            if (pendingGuildData.channels?.size) old.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
+            if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
+            if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
+        }
 
-    //     // Set approximate member count as member count if payload is from API
-    //     if (payload.guild.approximate_member_count && options.desiredProps?.guilds?.includes('memberCount')) args.memberCount = payload.guild.approximate_member_count;
+        // Set approximate member count as member count if payload is from API
+        if (payload.guild.approximate_member_count && options.desiredProps?.guilds?.includes('memberCount')) args.memberCount = payload.guild.approximate_member_count;
 
-    //     // Add to memory
-    //     bot.cache.guilds.set(args);
+        // Add to memory
+        bot.cache.guilds.set(args);
 
-    //     if (payload.guild.members) {
-    //         for (const member of payload.guild.members) {
-    //             if (member.user) {
-    //                 bot.transformers.member(bot, member, old.id, BigInt(member.user.id));
-    //                 bot.transformers.user(bot, member.user);
-    //             }
-    //         }
-    //     }
+        if (payload.guild.members) {
+            for (const member of payload.guild.members) {
+                if (member.user) {
+                    bot.transformers.member(bot, member, old.id, BigInt(member.user.id));
+                    bot.transformers.user(bot, member.user);
+                }
+            }
+        }
 
-    //     return args;
-    // };
+        return args;
+    };
 
     bot.transformers.customizers.channel = function (_, _payload, channel) {
         // Create the object from existing transformer.
