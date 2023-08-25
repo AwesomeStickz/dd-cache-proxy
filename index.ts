@@ -440,8 +440,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
     bot.transformers.customizers.member = function (_, _payload, member) {
-        console.log('does this work MEMBERS', member);
-
         // Create the object from existing transformer.
         const old = member;
 
@@ -465,8 +463,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     bot.transformers.customizers.user = function (_, _payload, user) {
-        console.log('does this work USER', user);
-
         // Create the object from existing transformer.
         const old = user;
 
@@ -561,8 +557,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     // };
 
     bot.transformers.customizers.channel = function (_, _payload, channel) {
-        console.log('does this work CHANNEL', channel);
-        
         // Create the object from existing transformer.
         const old = channel;
 
@@ -586,8 +580,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     bot.transformers.customizers.role = function (_, _payload, role) {
-        console.log('does this work ROLE', role);
-
         // Create the object from existing transformer.
         const old = role;
 
