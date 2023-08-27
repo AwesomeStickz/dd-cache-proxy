@@ -1,8 +1,8 @@
 import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
 import { iconHashToBigInt } from '@discordeno/utils';
 
-import { setupCacheEdits } from './setupCacheEdits';
-import { setupCacheRemovals } from './setupCacheRemovals';
+import { setupCacheEdits } from './setupCacheEdits.js';
+import { setupCacheRemovals } from './setupCacheRemovals.js';
 
 const pendingGuildsData = new Collection<
     bigint,
@@ -47,6 +47,12 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
             delete: (id: bigint) => Promise<void>;
         };
     };
+}
+
+export interface DeletedRemovalsProps {
+    channels: Collection<bigint, {
+        expiresIn: number;
+    }>;
 }
 
 export type BotWithProxyCache<T extends ProxyCacheTypes, B extends Bot = Bot> = Omit<B, 'cache'> & ProxyCacheProps<T>;
@@ -400,6 +406,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         },
         set: async function (channel: T['channel']): Promise<void> {
             if (options.shouldCache?.channel && !(await options.shouldCache.channel(channel))) return;
+            if (deletedRemovals.channels.get(channel.id)) return; // The channel with the given ID was deleted
 
             if (!channel.guildId) channel.lastInteractedTime = Date.now();
 
@@ -603,7 +610,17 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    setupCacheRemovals(bot);
+    // For cache removals
+    const deletedRemovals: DeletedRemovalsProps = {
+        channels: new Collection<bigint, { expiresIn: number }>(),
+    };
+    setInterval(() => {
+        for (const channel of deletedRemovals.channels.filter(c => c.expiresIn < Date.now()).keys()) {
+            deletedRemovals.channels.delete(channel)
+        }
+    }, 5000);
+
+    setupCacheRemovals(bot, deletedRemovals);
     setupCacheEdits(bot);
 
     if (options.maxCacheInactiveTime !== -1) {
