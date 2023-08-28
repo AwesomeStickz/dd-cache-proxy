@@ -543,6 +543,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         const pendingGuildData = pendingGuildsData.get(old.id);
 
         if (pendingGuildData) {
+            console.log('wowie');
             if (pendingGuildData.channels?.size) old.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
             if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
             if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
@@ -552,9 +553,9 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         if (options.cacheInMemory?.guilds) {
             const oldGuild = bot.cache.guilds.memory.get(old.id);
             if (oldGuild) {
-                if (!payload.guild.channels) args.channels = oldGuild.channels;
-                if (!payload.guild.members) args.members = oldGuild.members;
-                if (!payload.guild.roles) args.roles = oldGuild.roles;
+                if (!payload.guild.channels) args.channels = new Collection([ ...oldGuild.channels, ...args.channels ]);
+                if (!payload.guild.members) args.members = new Collection([ ...oldGuild.members, ...args.members ]);
+                if (!payload.guild.roles) args.roles = new Collection([ ...oldGuild.roles, ...args.roles ]);
             }
         }
 
