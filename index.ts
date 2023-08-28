@@ -552,9 +552,9 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         if (options.cacheInMemory?.guilds) {
             const oldGuild = bot.cache.guilds.memory.get(old.id);
             if (oldGuild) {
-                if (oldGuild.channels?.size) args.channels = new Collection([...old.channels, ...oldGuild.channels]);
-                if (oldGuild.members?.size) args.members = new Collection([...args.members, ...oldGuild.members]);
-                if (oldGuild.roles?.size) args.roles = new Collection([...old.roles, ...oldGuild.roles]);
+                if (!oldGuild.channels?.size) args.channels = oldGuild.channels;
+                if (!oldGuild.members?.size) args.members = oldGuild.members;
+                if (!oldGuild.roles?.size) args.roles = oldGuild.roles;
             }
         }
 
