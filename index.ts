@@ -543,7 +543,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         const pendingGuildData = pendingGuildsData.get(old.id);
 
         if (pendingGuildData) {
-            console.log('wowie');
             if (pendingGuildData.channels?.size) old.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
             if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
             if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
