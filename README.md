@@ -13,7 +13,7 @@ Used In:
 
 ```js
 import { createProxyCache } from 'dd-cache-proxy';
-import { Bot, Intents } from '@discordeno/bot';
+import { createBot, Bot, Intents } from '@discordeno/bot';
 
 // Create a function for easier use and cleaner code.
 const getProxyCacheBot = (bot: Bot) =>
@@ -69,6 +69,10 @@ const bot = getProxyCacheBot(
             // channelCreate,
             // channelUpdate,
             // channelDelete,
+
+            // guildMemberAdd,
+            // guildMemberUpdate,
+            // guildMemberRemove,
         }
     })
 );
