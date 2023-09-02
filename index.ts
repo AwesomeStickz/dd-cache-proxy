@@ -1,6 +1,5 @@
 import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
 import { iconHashToBigInt } from '@discordeno/utils';
-
 import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
 
@@ -47,12 +46,6 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
             delete: (id: bigint) => Promise<void>;
         };
     };
-}
-
-export interface DeletedRemovalsProps {
-    channels: Collection<bigint, {
-        expiresIn: number;
-    }>;
 }
 
 export type BotWithProxyCache<T extends ProxyCacheTypes, B extends Bot = Bot> = Omit<B, 'cache'> & ProxyCacheProps<T>;
@@ -329,7 +322,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         set: async function (member: T['member']): Promise<void> {
             if (options.shouldCache?.member && !(await options.shouldCache.member(member))) return;
 
-
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.members) {
                 if (options.cacheInMemory?.guilds) {
@@ -406,7 +398,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         },
         set: async function (channel: T['channel']): Promise<void> {
             if (options.shouldCache?.channel && !(await options.shouldCache.channel(channel))) return;
-            if (deletedRemovals.channels.get(channel.id)) return; // The channel with the given ID was deleted
 
             if (!channel.guildId) channel.lastInteractedTime = Date.now();
 
@@ -497,24 +488,22 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         if (options.cacheInMemory?.guilds) {
             // Get the guild id in bigint
             const guildId = bot.transformers.snowflake(payload.guild.id);
-            if (!bot.cache.guilds.memory.get(guildId)) {
-                // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
-                const preCacheGuild = {
-                    toggles: new GuildToggles(payload.guild),
-                    name: payload.guild.name,
-                    memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
-                    shardId: payload.shardId,
-                    icon: payload.guild.icon ? iconHashToBigInt(payload.guild.icon) : undefined,
-                    channels: new Collection<bigint, T['channel']>(),
-                    roles: new Collection<bigint, T['role']>(),
-                    id: guildId,
-                    // WEIRD EDGE CASE WITH BOT CREATED SERVERS
-                    ownerId: payload.guild.owner_id ? bot.transformers.snowflake(payload.guild.owner_id) : 0n,
-                };
+            // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
+            const preCacheGuild = {
+                toggles: new GuildToggles(payload.guild),
+                name: payload.guild.name,
+                memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
+                shardId: payload.shardId,
+                icon: payload.guild.icon ? iconHashToBigInt(payload.guild.icon) : undefined,
+                channels: new Collection<bigint, T['channel']>(),
+                roles: new Collection<bigint, T['role']>(),
+                id: guildId,
+                // WEIRD EDGE CASE WITH BOT CREATED SERVERS
+                ownerId: payload.guild.owner_id ? bot.transformers.snowflake(payload.guild.owner_id) : 0n,
+            };
 
-                // CACHE DIRECT TO MEMORY BECAUSE OTHER TRANSFORMERS NEED THE GUILD IN CACHE
-                bot.cache.guilds.memory.set(preCacheGuild.id, preCacheGuild);
-            }
+            // CACHE DIRECT TO MEMORY BECAUSE OTHER TRANSFORMERS NEED THE GUILD IN CACHE
+            bot.cache.guilds.memory.set(preCacheGuild.id, preCacheGuild);
         }
 
         // Create the object from existing transformer.
@@ -546,16 +535,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (pendingGuildData.channels?.size) old.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
             if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
             if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
-        }
-
-        // Fix bug where data be gone (didn't fix this for cacheOutsideMemory)
-        if (options.cacheInMemory?.guilds) {
-            const oldGuild = bot.cache.guilds.memory.get(old.id);
-            if (oldGuild) {
-                if (!payload.guild.channels) args.channels = new Collection([ ...oldGuild.channels, ...args.channels ]);
-                if (!payload.guild.members) args.members = new Collection([ ...oldGuild.members, ...args.members ]);
-                if (!payload.guild.roles) args.roles = new Collection([ ...oldGuild.roles, ...args.roles ]);
-            }
         }
 
         // Set approximate member count as member count if payload is from API
@@ -622,17 +601,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    // For cache removals
-    const deletedRemovals: DeletedRemovalsProps = {
-        channels: new Collection<bigint, { expiresIn: number }>(),
-    };
-    setInterval(() => {
-        for (const channel of deletedRemovals.channels.filter(c => c.expiresIn < Date.now()).keys()) {
-            deletedRemovals.channels.delete(channel)
-        }
-    }, 5000);
-
-    setupCacheRemovals(bot, deletedRemovals);
+    setupCacheRemovals(bot);
     setupCacheEdits(bot);
 
     if (options.maxCacheInactiveTime !== -1) {

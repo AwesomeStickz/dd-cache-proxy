@@ -54,7 +54,6 @@ const bot = getProxyCacheBot(
     createBot({
         token,
         intents: Intents.Guilds,
-
         events: {
             // The following events below are required for the caching system to work.
             // You can leave these events as empty functions, like `() => {}`, if you don't need to use them.

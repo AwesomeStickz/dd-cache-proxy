@@ -1,9 +1,8 @@
 import { Bot, DiscordChannel, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild } from '@discordeno/bot';
-import { BotWithProxyCache, ProxyCacheTypes, type DeletedRemovalsProps } from './index.js';
+import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
-export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>, deletedRemovals: DeletedRemovalsProps) {
+export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) {
     const { CHANNEL_DELETE, GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE, THREAD_DELETE } = bot.handlers;
-    const DELETE_REMOVEAL_EXPIRESIN = 5000; // 5 seconds
 
     bot.handlers.CHANNEL_DELETE = function (_, data, shardId) {
         const payload = data.d as DiscordChannel;
@@ -12,8 +11,7 @@ export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCa
 
         const id = bot.transformers.snowflake(payload.id);
 
-        deletedRemovals.channels.set(id, { expiresIn: Date.now() + DELETE_REMOVEAL_EXPIRESIN }); 
-        bot.cache.channels.delete(id);
+        setTimeout(() => bot.cache.channels.delete(id), 5000);
     };
 
     bot.handlers.GUILD_DELETE = function (_, data, shardId) {
@@ -56,7 +54,6 @@ export function setupCacheRemovals<B extends Bot>(bot: BotWithProxyCache<ProxyCa
 
         const id = bot.transformers.snowflake(payload.id);
 
-        deletedRemovals.channels.set(id, { expiresIn: Date.now() + DELETE_REMOVEAL_EXPIRESIN }); 
-        bot.cache.channels.delete(id);
+        setTimeout(() => bot.cache.channels.delete(id), 5000);
     };
 }
