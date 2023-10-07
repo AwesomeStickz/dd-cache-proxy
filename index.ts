@@ -435,7 +435,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     // MODIFY TRANSFORMERS
-    const { guild } = bot.transformers;
 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
     bot.transformers.customizers.member = function (_, _payload, member) {
@@ -484,22 +483,22 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    bot.transformers.guild = function (_, payload) {
+    bot.transformers.customizers.guild = function (_, payload, guild) {
         if (options.cacheInMemory?.guilds) {
             // Get the guild id in bigint
-            const guildId = bot.transformers.snowflake(payload.guild.id);
+            const guildId = bot.transformers.snowflake(payload.id);
             // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
             const preCacheGuild = {
-                toggles: new GuildToggles(payload.guild),
-                name: payload.guild.name,
-                memberCount: payload.guild.member_count ?? payload.guild.approximate_member_count ?? 0,
-                shardId: payload.shardId,
-                icon: payload.guild.icon ? iconHashToBigInt(payload.guild.icon) : undefined,
+                toggles: new GuildToggles(payload),
+                name: payload.name,
+                memberCount: payload.member_count ?? payload.approximate_member_count ?? 0,
+                shardId: guild.shardId,
+                icon: payload.icon ? iconHashToBigInt(payload.icon) : undefined,
                 channels: new Collection<bigint, T['channel']>(),
                 roles: new Collection<bigint, T['role']>(),
                 id: guildId,
                 // WEIRD EDGE CASE WITH BOT CREATED SERVERS
-                ownerId: payload.guild.owner_id ? bot.transformers.snowflake(payload.guild.owner_id) : 0n,
+                ownerId: payload.owner_id ? bot.transformers.snowflake(payload.owner_id) : 0n,
             };
 
             // CACHE DIRECT TO MEMORY BECAUSE OTHER TRANSFORMERS NEED THE GUILD IN CACHE
@@ -507,7 +506,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         }
 
         // Create the object from existing transformer.
-        const old = guild(bot, payload);
+        const old = guild;
 
         options.shouldCache?.guild?.(old).then((shouldCache) => {
             if (!shouldCache) bot.cache.guilds.memory.delete(old.id);
@@ -538,13 +537,13 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         }
 
         // Set approximate member count as member count if payload is from API
-        if (payload.guild.approximate_member_count && options.desiredProps?.guilds?.includes('memberCount')) args.memberCount = payload.guild.approximate_member_count;
+        if (payload.approximate_member_count && options.desiredProps?.guilds?.includes('memberCount')) args.memberCount = payload.approximate_member_count;
 
         // Add to memory
         bot.cache.guilds.set(args);
 
-        if (payload.guild.members) {
-            for (const member of payload.guild.members) {
+        if (payload.members) {
+            for (const member of payload.members) {
                 if (member.user) {
                     bot.transformers.member(bot, member, old.id, BigInt(member.user.id));
                     bot.transformers.user(bot, member.user);
