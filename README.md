@@ -58,8 +58,7 @@ const bot = getProxyCacheBot(
 );
 ```
 
-Make sure to include the correct `client.transformers.desiredProperties` somewhere in your code.
-
+**Important Note:** Make sure to include the correct `client.transformers.desiredProperties` somewhere in your code, this must include at least **all** the properties from `client.cache.options.desiredProps`.
 ## Get guild from cache:
 
 ```js
