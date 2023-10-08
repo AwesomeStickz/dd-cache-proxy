@@ -1,5 +1,4 @@
-import { Bot } from 'discordeno';
-import { DiscordGuildMemberAdd, DiscordGuildMemberRemove } from 'discordeno/types';
+import { Bot, DiscordGuildMemberAdd, DiscordGuildMemberRemove } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
 export function setupCacheEdits<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) {

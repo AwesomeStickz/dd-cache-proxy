@@ -13,7 +13,7 @@ Used In:
 
 ```js
 import { createProxyCache } from 'dd-cache-proxy';
-import { Bot, Intents } from 'discordeno';
+import { createBot, Bot, Intents } from '@discordeno/bot';
 
 // Create a function for easier use and cleaner code.
 const getProxyCacheBot = (bot: Bot) =>
@@ -57,6 +57,8 @@ const bot = getProxyCacheBot(
     })
 );
 ```
+
+**Important Note:** Make sure to include the correct `client.transformers.desiredProperties` somewhere in your code, this must include at least **all** the properties from `client.cache.options.desiredProps`.
 
 ## Get guild from cache:
 
