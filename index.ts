@@ -434,7 +434,6 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         },
     };
 
-
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
     bot.transformers.customizers.member = function (_, _payload, member) {
         // Create the object from existing transformer.
