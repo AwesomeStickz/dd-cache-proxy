@@ -1,6 +1,8 @@
 import { Bot, EventHandlers } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
+const ignore = () => {};
+
 export const setupDummyEvents = <B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) => {
     const eventsRequired = new Set<keyof EventHandlers>();
     const { cacheInMemory, cacheOutsideMemory } = bot.cache.options || {};
@@ -15,8 +17,6 @@ export const setupDummyEvents = <B extends Bot>(bot: BotWithProxyCache<ProxyCach
     if (cacheInMemory?.members || cacheOutsideMemory?.members) setupDummyMemberEvents(eventsRequired);
     // User
     if (cacheInMemory?.users || cacheOutsideMemory?.users) setupDummyUserEvents(eventsRequired);
-
-    const ignore = () => {};
 
     for (const event of eventsRequired) bot.events[event] ??= ignore;
 };
@@ -51,6 +51,8 @@ const setupDummyMemberEvents = (eventsRequired: Set<keyof EventHandlers>) => {
     eventsRequired.add('guildMemberAdd');
     eventsRequired.add('guildMemberRemove');
     eventsRequired.add('guildMemberUpdate');
+    eventsRequired.add('reactionAdd');
+    eventsRequired.add('typingStart');
 
     setupDummyGuildEvents(eventsRequired);
     setupDummyInteractionEvents(eventsRequired);
