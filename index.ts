@@ -2,6 +2,7 @@ import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role,
 import { iconHashToBigInt } from '@discordeno/utils';
 import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
+import { setupDummyEvents } from './setupDummyEvents.js';
 
 const pendingGuildsData = new Collection<
     bigint,
@@ -601,6 +602,10 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     setupCacheRemovals(bot);
     setupCacheEdits(bot);
 
+    // Set dummy functions to events that aren't used, so customizers will still be run so we can cache data
+    setupDummyEvents(bot);
+
+    // Handle cache sweeping
     if (options.maxCacheInactiveTime !== -1) {
         setInterval(() => {
             bot.cache.channels.memory.forEach((channel) => {

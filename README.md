@@ -58,8 +58,6 @@ const bot = getProxyCacheBot(
 );
 ```
 
-**Important Note:** Make sure to include the correct `client.transformers.desiredProperties` somewhere in your code, this must include at least **all** the properties from `client.cache.options.desiredProps`.
-
 ## Get guild from cache:
 
 ```js
@@ -67,6 +65,11 @@ await bot.cache.guilds.get(guildId);
 ```
 
 Each cache will be in their own property under `bot.cache` and each of them have the following methods: `delete`, `get`, `set`, usage of these should be self explanatory from intellisense. If you cache in memory and need access to the collection directly, you can use `bot.cache.guilds.memory`, this will return a collection.
+
+# **Important Things To Note:**
+
+-   Make sure to include the correct `client.transformers.desiredProperties` somewhere in your code, this must include at least **all** the properties from `client.cache.options.desiredProps` for it to cache all those properties you want to cache.
+-   It's not recommended to dynamically change `client.cache.options.cacheInMemory` or `client.cache.options.cacheOutsideMemory`. If you need to do so, you need to manually rerun the `setupDummyEvents` function.
 
 # Useful Options To Note:
 
