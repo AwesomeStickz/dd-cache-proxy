@@ -51,7 +51,7 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
 
 export type BotWithProxyCache<T extends ProxyCacheTypes, B extends Bot = Bot> = Omit<B, 'cache'> & ProxyCacheProps<T>;
 
-export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCacheTypes, B extends Bot = Bot>(rawBot: B, options: CreateProxyCacheOptions): BotWithProxyCache<T, B> {
+export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCacheTypes, B extends Bot = Bot>(rawBot: B, options: CreateProxyCacheOptions): BotWithProxyCache<T, B> => {
     // @ts-ignore why is this failing?
     const bot = rawBot as BotWithProxyCache<T, B>;
 
@@ -88,7 +88,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     if (!bot.cache.options.cacheSweepInterval) bot.cache.options.cacheSweepInterval = 1000 * 60 * 5;
 
     const internalBulkRemover = {
-        removeRole: async function (id: bigint) {
+        removeRole: async (id: bigint) => {
             const guildID = bot.cache.roles.guildIDs.get(id);
             if (guildID) {
                 // Get the guild if its in cache
@@ -105,7 +105,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
             bot.cache.roles.guildIDs.delete(id);
         },
-        removeGuild: async function (id: bigint) {
+        removeGuild: async (id: bigint) => {
             // Remove from memory
             bot.cache.guilds.memory.delete(id);
 
@@ -127,7 +127,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
     // If user passed bulk.removeRole else if replaceInternalBulkRemover.role is not set to true
     if (removeRole || !replaceInternalBulkRemover?.role) {
-        bot.cache.options.bulk.removeRole = async function (id) {
+        bot.cache.options.bulk.removeRole = async (id) => {
             // If replaceInternalBulkRemover.role is not set to true, run internal role bulk remover
             if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id);
             // If user passed bulk.removeRole, run passed bulk remover
@@ -137,7 +137,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
     // If user passed bulk.removeGuild else if replaceInternalBulkRemover.guild is not set to true
     if (removeGuild || !replaceInternalBulkRemover?.guild) {
-        bot.cache.options.bulk.removeGuild = async function (id) {
+        bot.cache.options.bulk.removeGuild = async (id) => {
             // If replaceInternalBulkRemover.guild is not set to true, run internal guild bulk remover
             if (!replaceInternalBulkRemover?.guild) await internalBulkRemover.removeGuild(id);
             // If user passed bulk.removeGuild, run passed bulk remover
@@ -147,7 +147,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.guilds = {
         memory: new Collection<bigint, T['guild']>(),
-        get: async function (id: BigString): Promise<T['guild'] | undefined> {
+        get: async (id: BigString): Promise<T['guild'] | undefined> => {
             // Force into bigint form
             const guildID = BigInt(id);
 
@@ -171,7 +171,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
             return stored;
         },
-        set: async function (guild: T['guild']): Promise<void> {
+        set: async (guild: T['guild']): Promise<void> => {
             // Should this be cached or not?
             if (options.shouldCache?.guild && !(await options.shouldCache.guild(guild))) return;
 
@@ -182,7 +182,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.guilds) if (options.setItem) await options.setItem('guilds', guild);
         },
-        delete: async function (id: BigString): Promise<void> {
+        delete: async (id: BigString): Promise<void> => {
             // Force id to bigint
             const guildID = BigInt(id);
             // Remove from memory
@@ -194,7 +194,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.users = {
         memory: new Collection<bigint, T['user']>(),
-        get: async function (id: BigString): Promise<T['user'] | undefined> {
+        get: async (id: BigString): Promise<T['user'] | undefined> => {
             // Force into bigint form
             const userID = BigInt(id);
 
@@ -218,7 +218,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
             return stored;
         },
-        set: async function (user: T['user']): Promise<void> {
+        set: async (user: T['user']): Promise<void> => {
             if (options.shouldCache?.user && !(await options.shouldCache.user(user))) return;
 
             if (user.id !== bot.id) user.lastInteractedTime = Date.now();
@@ -228,7 +228,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.users) if (options.setItem) await options.setItem('users', user);
         },
-        delete: async function (id: BigString): Promise<void> {
+        delete: async (id: BigString): Promise<void> => {
             // Force id to bigint
             const userID = BigInt(id);
             // Remove from memory
@@ -240,7 +240,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.roles = {
         guildIDs: new Collection<bigint, bigint>(),
-        get: async function (id: BigString): Promise<T['role'] | undefined> {
+        get: async (id: BigString): Promise<T['role'] | undefined> => {
             // Force into bigint form
             const roleID = BigInt(id);
 
@@ -263,7 +263,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (stored && options.cacheInMemory?.roles) bot.cache.roles.set(stored);
             return stored;
         },
-        set: async function (role: T['role']): Promise<void> {
+        set: async (role: T['role']): Promise<void> => {
             if (options.shouldCache?.role && !(await options.shouldCache.role(role))) return;
 
             // If user wants memory cache, we cache it
@@ -287,7 +287,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.roles) if (options.setItem) await options.setItem('roles', role);
         },
-        delete: async function (id: BigString): Promise<void> {
+        delete: async (id: BigString): Promise<void> => {
             // Force id to bigint
             const roleID = BigInt(id);
             // Remove from memory
@@ -299,7 +299,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     bot.cache.members = {
-        get: async function (id: BigString, guildId: BigString): Promise<T['member'] | undefined> {
+        get: async (id: BigString, guildId: BigString): Promise<T['member'] | undefined> => {
             // Force into bigint form
             const memberID = BigInt(id);
             const guildID = BigInt(guildId);
@@ -320,7 +320,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             if (stored && options.cacheInMemory?.members) bot.cache.members.set(stored);
             return stored;
         },
-        set: async function (member: T['member']): Promise<void> {
+        set: async (member: T['member']): Promise<void> => {
             if (options.shouldCache?.member && !(await options.shouldCache.member(member))) return;
 
             // If user wants memory cache, we cache it
@@ -341,7 +341,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.members) if (options.setItem) await options.setItem('members', member);
         },
-        delete: async function (id: BigString, guildId: BigString): Promise<void> {
+        delete: async (id: BigString, guildId: BigString): Promise<void> => {
             // Force id to bigint
             const memberID = BigInt(id);
             const guildID = BigInt(guildId);
@@ -356,7 +356,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     bot.cache.channels = {
         guildIDs: new Collection<bigint, bigint>(),
         memory: new Collection<bigint, T['channel']>(),
-        get: async function (id: BigString): Promise<T['channel'] | undefined> {
+        get: async (id: BigString): Promise<T['channel'] | undefined> => {
             // Force into bigint form
             const channelID = BigInt(id);
 
@@ -397,7 +397,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
 
             return stored;
         },
-        set: async function (channel: T['channel']): Promise<void> {
+        set: async (channel: T['channel']): Promise<void> => {
             if (options.shouldCache?.channel && !(await options.shouldCache.channel(channel))) return;
 
             if (!channel.guildId) channel.lastInteractedTime = Date.now();
@@ -423,7 +423,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.channels) if (options.setItem) await options.setItem('channels', channel);
         },
-        delete: async function (id: BigString): Promise<void> {
+        delete: async (id: BigString): Promise<void> => {
             // Force id to bigint
             const channelID = BigInt(id);
             // Remove from memory
@@ -436,7 +436,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
-    bot.transformers.customizers.member = function (_, _payload, member) {
+    bot.transformers.customizers.member = (_, _payload, member) => {
         // Create the object from existing transformer.
         const old = member;
 
@@ -459,7 +459,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    bot.transformers.customizers.user = function (_, _payload, user) {
+    bot.transformers.customizers.user = (_, _payload, user) => {
         // Create the object from existing transformer.
         const old = user;
 
@@ -482,7 +482,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    bot.transformers.customizers.guild = function (_, payload, guild) {
+    bot.transformers.customizers.guild = (_, payload, guild) => {
         if (options.cacheInMemory?.guilds) {
             // Get the guild id in bigint
             const guildId = bot.transformers.snowflake(payload.id);
@@ -553,7 +553,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    bot.transformers.customizers.channel = function (_, _payload, channel) {
+    bot.transformers.customizers.channel = (_, _payload, channel) => {
         // Create the object from existing transformer.
         const old = channel;
 
@@ -576,7 +576,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    bot.transformers.customizers.role = function (_, _payload, role) {
+    bot.transformers.customizers.role = (_, _payload, role) => {
         // Create the object from existing transformer.
         const old = role;
 
@@ -623,7 +623,7 @@ export function createProxyCache<T extends ProxyCacheTypes<boolean> = ProxyCache
     }
 
     return bot;
-}
+};
 
 export type ProxyCacheTypes<T extends boolean = true> = {
     guild: T extends true ? Guild : any;

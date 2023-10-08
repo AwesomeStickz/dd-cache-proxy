@@ -1,8 +1,7 @@
 import { Bot, EventHandlers } from '@discordeno/bot';
-
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
-export function setupDummyEvents<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) {
+export const setupDummyEvents = <B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) => {
     const eventsRequired = new Set<keyof EventHandlers>();
     const { cacheInMemory, cacheOutsideMemory } = bot.cache.options || {};
 
@@ -20,7 +19,7 @@ export function setupDummyEvents<B extends Bot>(bot: BotWithProxyCache<ProxyCach
     const ignore = () => {};
 
     for (const event of eventsRequired) bot.events[event] ??= ignore;
-}
+};
 
 const setupDummyGuildEvents = (eventsRequired: Set<keyof EventHandlers>) => {
     eventsRequired.add('guildCreate');

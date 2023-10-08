@@ -1,10 +1,10 @@
 import { Bot, DiscordGuildMemberAdd, DiscordGuildMemberRemove } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
-export function setupCacheEdits<B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) {
+export const setupCacheEdits = <B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) => {
     const { GUILD_MEMBER_ADD, GUILD_MEMBER_REMOVE } = bot.handlers;
 
-    bot.handlers.GUILD_MEMBER_ADD = async function (_, data, shardId) {
+    bot.handlers.GUILD_MEMBER_ADD = async (_, data, shardId) => {
         const payload = data.d as DiscordGuildMemberAdd;
 
         const guildID = bot.transformers.snowflake(payload.guild_id);
@@ -18,7 +18,7 @@ export function setupCacheEdits<B extends Bot>(bot: BotWithProxyCache<ProxyCache
         GUILD_MEMBER_ADD(bot, data, shardId);
     };
 
-    bot.handlers.GUILD_MEMBER_REMOVE = async function (_, data, shardId) {
+    bot.handlers.GUILD_MEMBER_REMOVE = async (_, data, shardId) => {
         const payload = data.d as DiscordGuildMemberRemove;
 
         const guildID = bot.transformers.snowflake(payload.guild_id);
@@ -31,4 +31,4 @@ export function setupCacheEdits<B extends Bot>(bot: BotWithProxyCache<ProxyCache
 
         GUILD_MEMBER_REMOVE(bot, data, shardId);
     };
-}
+};
