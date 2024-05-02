@@ -1,7 +1,7 @@
 {
   "name": "dd-cache-proxy",
   "type": "module",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "A simple, easy-to-use, highly customizable cache proxy for discordeno which supports in-memory and outside memory caching with custom properties you wish to cache.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,7 +14,7 @@
     "type": "git",
     "url": "git+https://github.com/AwesomeStickz/dd-cache-proxy.git"
   },
-  "keywords": [ ],
+  "keywords": [],
   "author": "",
   "license": "ISC",
   "files": [
