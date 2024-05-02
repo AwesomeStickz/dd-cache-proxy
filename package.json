@@ -4,9 +4,9 @@
   "version": "2.0.2",
   "description": "A simple, easy-to-use, highly customizable cache proxy for discordeno which supports in-memory and outside memory caching with custom properties you wish to cache.",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "prepare": "tsc",
-    "preinstall": "tsc",
     "tsc": "tsc --noEmit --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,15 +14,21 @@
     "type": "git",
     "url": "git+https://github.com/AwesomeStickz/dd-cache-proxy.git"
   },
-  "keywords": [],
+  "keywords": [ ],
   "author": "",
   "license": "ISC",
+  "files": [
+    "dist",
+    "package.json"
+  ],
   "bugs": {
     "url": "https://github.com/AwesomeStickz/dd-cache-proxy/issues"
   },
   "homepage": "https://github.com/AwesomeStickz/dd-cache-proxy#readme",
   "dependencies": {
-    "@discordeno/bot": "^19.0.0-next.730ad9a",
-    "typescript": "^4.8.4"
+    "@discordeno/bot": "19.0.0-next.687c29d"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
   }
 }
