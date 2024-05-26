@@ -25,10 +25,10 @@
     "url": "https://github.com/AwesomeStickz/dd-cache-proxy/issues"
   },
   "homepage": "https://github.com/AwesomeStickz/dd-cache-proxy#readme",
-  "dependencies": {
-    "@discordeno/bot": "^19.0.0-next.d69e537"
-  },
   "devDependencies": {
     "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "@discordeno/bot": "19.0.0-next.d69e537"
   }
 }
