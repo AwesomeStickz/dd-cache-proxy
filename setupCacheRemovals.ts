@@ -26,6 +26,7 @@ export const setupCacheRemovals = <B extends Bot>(bot: BotWithProxyCache<ProxyCa
 
     bot.handlers.GUILD_MEMBER_REMOVE = (_, data, shardId) => {
         const payload = data.d as DiscordGuildMemberRemove;
+
         GUILD_MEMBER_REMOVE(bot, data, shardId);
 
         bot.cache.members.delete(bot.transformers.snowflake(payload.user.id), bot.transformers.snowflake(payload.guild_id));
