@@ -16,12 +16,6 @@ const pendingGuildsData = new Collection<
 export interface ProxyCacheProps<T extends ProxyCacheTypes> {
     cache: {
         options: CreateProxyCacheOptions;
-        guilds: {
-            memory: Collection<bigint, T['guild']>;
-            get: (id: bigint) => Promise<T['guild'] | undefined>;
-            set: (value: T['guild']) => Promise<void>;
-            delete: (id: bigint) => Promise<void>;
-        };
         channels: {
             guildIDs: Collection<bigint, bigint>;
             memory: Collection<bigint, T['channel']>;
@@ -29,16 +23,22 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
             set: (value: T['channel'], currentTry?: number) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
-        roles: {
-            guildIDs: Collection<bigint, bigint>;
-            get: (id: bigint) => Promise<T['role'] | undefined>;
-            set: (value: T['role'], currentTry?: number) => Promise<void>;
+        guilds: {
+            memory: Collection<bigint, T['guild']>;
+            get: (id: bigint) => Promise<T['guild'] | undefined>;
+            set: (value: T['guild']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         members: {
             get: (id: bigint, guildId: bigint) => Promise<T['member'] | undefined>;
             set: (value: T['member'], currentTry?: number) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
+        };
+        roles: {
+            guildIDs: Collection<bigint, bigint>;
+            get: (id: bigint) => Promise<T['role'] | undefined>;
+            set: (value: T['role'], currentTry?: number) => Promise<void>;
+            delete: (id: bigint) => Promise<void>;
         };
         users: {
             memory: Collection<bigint, T['user']>;
@@ -65,24 +65,36 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
     const cacheOutsideMemoryDefault = bot.cache.options.cacheOutsideMemory.default;
 
     bot.cache.options.cacheInMemory = {
-        guilds: cacheInMemoryDefault,
-        users: cacheInMemoryDefault,
         channels: cacheInMemoryDefault,
+        guilds: cacheInMemoryDefault,
         members: cacheInMemoryDefault,
         roles: cacheInMemoryDefault,
+        users: cacheInMemoryDefault,
         ...bot.cache.options.cacheInMemory,
     };
 
     bot.cache.options.cacheOutsideMemory = {
-        guilds: cacheOutsideMemoryDefault,
-        users: cacheOutsideMemoryDefault,
         channels: cacheOutsideMemoryDefault,
+        guilds: cacheOutsideMemoryDefault,
         members: cacheOutsideMemoryDefault,
         roles: cacheOutsideMemoryDefault,
+        users: cacheOutsideMemoryDefault,
         ...bot.cache.options.cacheOutsideMemory,
     };
 
     const internalBulkRemover = {
+        removeGuild: async (id: bigint) => {
+            // Remove from memory
+            bot.cache.guilds.memory.delete(id);
+
+            // Remove any associated channels
+            bot.cache.channels.memory.forEach((channel) => {
+                if (channel.guildId === id) {
+                    bot.cache.channels.memory.delete(channel.id);
+                    bot.cache.channels.guildIDs.delete(channel.id);
+                }
+            });
+        },
         removeRole: async (id: bigint) => {
             const guildID = bot.cache.roles.guildIDs.get(id);
             if (guildID) {
@@ -100,18 +112,6 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
             bot.cache.roles.guildIDs.delete(id);
         },
-        removeGuild: async (id: bigint) => {
-            // Remove from memory
-            bot.cache.guilds.memory.delete(id);
-
-            // Remove any associated channels
-            bot.cache.channels.memory.forEach((channel) => {
-                if (channel.guildId === id) {
-                    bot.cache.channels.memory.delete(channel.id);
-                    bot.cache.channels.guildIDs.delete(channel.id);
-                }
-            });
-        },
     };
 
     if (!bot.cache.options.bulk) bot.cache.options.bulk = {};
@@ -120,16 +120,6 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
     const { removeGuild, removeRole } = bot.cache.options.bulk;
     const { replaceInternalBulkRemover } = bot.cache.options.bulk;
 
-    // If user passed bulk.removeRole else if replaceInternalBulkRemover.role is not set to true
-    if (removeRole || !replaceInternalBulkRemover?.role) {
-        bot.cache.options.bulk.removeRole = async (id) => {
-            // If replaceInternalBulkRemover.role is not set to true, run internal role bulk remover
-            if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id);
-            // If user passed bulk.removeRole, run passed bulk remover
-            await removeRole?.(id);
-        };
-    }
-
     // If user passed bulk.removeGuild else if replaceInternalBulkRemover.guild is not set to true
     if (removeGuild || !replaceInternalBulkRemover?.guild) {
         bot.cache.options.bulk.removeGuild = async (id) => {
@@ -137,6 +127,16 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             if (!replaceInternalBulkRemover?.guild) await internalBulkRemover.removeGuild(id);
             // If user passed bulk.removeGuild, run passed bulk remover
             await removeGuild?.(id);
+        };
+    }
+
+    // If user passed bulk.removeRole else if replaceInternalBulkRemover.role is not set to true
+    if (removeRole || !replaceInternalBulkRemover?.role) {
+        bot.cache.options.bulk.removeRole = async (id) => {
+            // If replaceInternalBulkRemover.role is not set to true, run internal role bulk remover
+            if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id);
+            // If user passed bulk.removeRole, run passed bulk remover
+            await removeRole?.(id);
         };
     }
 
@@ -594,8 +594,8 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
         return args;
     };
 
-    setupCacheRemovals(bot);
     setupCacheEdits(bot);
+    setupCacheRemovals(bot);
 
     // Set dummy functions to events that aren't used, so customizers will still be run so we can cache data
     setupDummyEvents(bot);
@@ -638,93 +638,84 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 };
 
 export type ProxyCacheTypes<T extends boolean = true> = {
-    guild: T extends true ? Guild : any;
-    user: T extends true ? User : any;
     channel: T extends true ? Channel : any;
+    guild: T extends true ? Guild : any;
     member: T extends true ? Member : any;
     role: T extends true ? Role : any;
+    user: T extends true ? User : any;
 };
 
 export interface CreateProxyCacheOptions {
-    /** Configure the handlers that should be ran whenever something is about to be cached to determine whether it should or should not be cached. */
-    shouldCache?: {
-        /** Handler to check whether or not to cache this guild. */
-        guild?: (guild: Guild) => Promise<boolean>;
-        /** Handler to check whether or not to cache this user. */
-        user?: (user: User) => Promise<boolean>;
-        /** Handler to check whether or not to cache this channel. */
-        channel?: (channel: Channel) => Promise<boolean>;
-        /** Handler to check whether or not to cache this member. */
-        member?: (member: Member) => Promise<boolean>;
-        /** Handler to check whether or not to cache this role. */
-        role?: (role: Role) => Promise<boolean>;
-    };
     /** Configure the exact properties you wish to have in each object. */
     desiredProps?: {
-        /** The properties you want to keep in a user object. */
-        users?: (keyof User)[];
-        /** The properties you want to keep in a guild object. */
-        guilds?: (keyof Guild)[];
         /** The properties you want to keep in a channel object. */
         channels?: (keyof Channel)[];
+        /** The properties you want to keep in a guild object. */
+        guilds?: (keyof Guild)[];
         /** The properties you want to keep in a member object. */
         members?: (keyof Member)[];
         /** The properties you want to keep in a role object. */
         roles?: (keyof Role)[];
+        /** The properties you want to keep in a user object. */
+        users?: (keyof User)[];
     };
     /** Configure the properties you do NOT want in each object. */
     undesiredProps?: {
-        /** The properties you do NOT want in a user object. */
-        users?: (keyof User)[];
-        /** The properties you do NOT want in a guild object. */
-        guilds?: (keyof Guild)[];
         /** The properties you do NOT want in a channel object. */
         channels?: (keyof Channel)[];
+        /** The properties you do NOT want in a guild object. */
+        guilds?: (keyof Guild)[];
         /** The properties you do NOT want in a member object. */
         members?: (keyof Member)[];
         /** The properties you do NOT want in a role object. */
         roles?: (keyof Role)[];
+        /** The properties you do NOT want in a user object. */
+        users?: (keyof User)[];
     };
-    /** Options to choose how the proxy will cache everything.
+    /**
+     * Options to choose how the proxy will cache everything.
      *
-     * By default, all props inside `cacheInMemory` are set to `true`. */
+     * By default, all props inside `cacheInMemory` are set to `true`.
+     */
     cacheInMemory?: {
-        /** Whether or not to cache guilds. */
-        guilds?: boolean;
-        /** Whether or not to cache users. */
-        users?: boolean;
         /** Whether or not to cache channels. If guilds is enabled, then these are cached inside the guild object. */
         channels?: boolean;
+        /** Whether or not to cache guilds. */
+        guilds?: boolean;
         /** Whether or not to cache members. If guilds is enabled, then these are cached inside the guild object. */
         members?: boolean;
         /** Whether or not the cache roles. If guilds is enabled, then these are cached inside the guild object.*/
         roles?: boolean;
+        /** Whether or not to cache users. */
+        users?: boolean;
         /** Default value for the properties that are not provided inside `cacheInMemory`. */
         default: boolean;
     };
-    /** Options to choose how the proxy will cache in a separate persitant cache.
+    /**
+     * Options to choose how the proxy will cache in a separate persitant cache.
      *
-     * By default, all props inside `cacheOutsideMemory` are set to `false`. */
+     * By default, all props inside `cacheOutsideMemory` are set to `false`.
+     */
     cacheOutsideMemory?: {
-        /** Whether or not to cache guilds. */
-        guilds?: boolean;
-        /** Whether or not to cache users. */
-        users?: boolean;
         /** Whether or not to cache channels. */
         channels?: boolean;
+        /** Whether or not to cache guilds. */
+        guilds?: boolean;
         /** Whether or not to cache members. */
         members?: boolean;
         /** Whether or not to cache roles. */
         roles?: boolean;
+        /** Whether or not to cache users. */
+        users?: boolean;
         /** Default value for the properties that are not provided inside `cacheOutsideMemory`. */
         default: boolean;
     };
     /** Handler to get an object from a specific table. */
-    getItem?: <T>(...args: [table: 'guilds' | 'channels' | 'roles' | 'users', id: bigint] | [table: 'members', id: bigint, guildId: bigint]) => Promise<T>;
+    getItem?: <T>(...args: [table: 'channels' | 'guilds' | 'roles' | 'users', id: bigint] | [table: 'members', id: bigint, guildId: bigint]) => Promise<T>;
     /** Handler to set an object in a specific table. */
-    setItem?: (table: 'guilds' | 'channels' | 'roles' | 'members' | 'users', item: any) => Promise<unknown>;
+    setItem?: (table: 'channels' | 'guilds' | 'members' | 'roles' | 'users', item: any) => Promise<unknown>;
     /** Handler to delete an object in a specific table. */
-    removeItem?: (...args: [table: 'guilds' | 'channels' | 'roles' | 'users', id: bigint] | [table: 'members', id: bigint, guildId: bigint]) => Promise<unknown>;
+    removeItem?: (...args: [table: 'channels' | 'guilds' | 'roles' | 'users', id: bigint] | [table: 'members', id: bigint, guildId: bigint]) => Promise<unknown>;
     bulk?: {
         /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a guild is deleted, you want to make sure all channels, roles, and members are removed as well. */
         removeGuild?: (id: bigint) => Promise<unknown>;
@@ -732,22 +723,38 @@ export interface CreateProxyCacheOptions {
         removeRole?: (id: bigint) => Promise<unknown>;
         /** Options to choose whether or not to replace internal removers. */
         replaceInternalBulkRemover?: {
-            /** Whether or not to replace internal guild remover.
-             *
-             * By default, the proxy will bulk remove guilds from memory. You can override this behavior by setting this option to `true`.
-             */
-            guild?: boolean;
-            /** Whether or not to replace internal channel remover.
+            /**
+             * Whether or not to replace internal channel remover.
              *
              * By default, the proxy will bulk remove channel from memory. You can override this behavior by setting this option to `true`.
              */
             channel?: boolean;
-            /** Whether or not to replace internal role remover.
+            /**
+             * Whether or not to replace internal guild remover.
+             *
+             * By default, the proxy will bulk remove guilds from memory. You can override this behavior by setting this option to `true`.
+             */
+            guild?: boolean;
+            /**
+             * Whether or not to replace internal role remover.
              *
              * By default, the proxy will bulk remove role from memory. You can override this behavior by setting this option to `true`.
              */
             role?: boolean;
         };
+    };
+    /** Configure the handlers that should be ran whenever something is about to be cached to determine whether it should or should not be cached. */
+    shouldCache?: {
+        /** Handler to check whether or not to cache this channel. */
+        channel?: (channel: Channel) => Promise<boolean>;
+        /** Handler to check whether or not to cache this guild. */
+        guild?: (guild: Guild) => Promise<boolean>;
+        /** Handler to check whether or not to cache this member. */
+        member?: (member: Member) => Promise<boolean>;
+        /** Handler to check whether or not to cache this role. */
+        role?: (role: Role) => Promise<boolean>;
+        /** Handler to check whether or not to cache this user. */
+        user?: (user: User) => Promise<boolean>;
     };
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
