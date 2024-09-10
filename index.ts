@@ -82,11 +82,6 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
         ...bot.cache.options.cacheOutsideMemory,
     };
 
-    // Default Max Cache Inactive Time to Infinity
-    if (!bot.cache.options.maxCacheInactiveTime) bot.cache.options.maxCacheInactiveTime = -1;
-    // Default Cache Sweep Interval to 5 minutes
-    if (!bot.cache.options.cacheSweepInterval) bot.cache.options.cacheSweepInterval = 1000 * 60 * 5;
-
     const internalBulkRemover = {
         removeRole: async (id: bigint) => {
             const guildID = bot.cache.roles.guildIDs.get(id);
@@ -606,20 +601,37 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
     setupDummyEvents(bot);
 
     // Handle cache sweeping
-    if (options.maxCacheInactiveTime !== -1) {
+    if (options.sweeper) {
+        const { filter, interval } = options.sweeper;
+
         setInterval(() => {
             bot.cache.channels.memory.forEach((channel) => {
-                if (Date.now() - channel.lastInteractedTime > options.maxCacheInactiveTime!) bot.cache.guilds.delete(channel.id);
+                if (filter.channel?.(channel)) bot.cache.channels.memory.delete(channel.id);
             });
 
-            bot.cache.guilds.memory.forEach((guild) => {
-                if (Date.now() - guild.lastInteractedTime > options.maxCacheInactiveTime!) bot.cache.guilds.delete(guild.id);
+            bot.cache.guilds.memory.forEach((guild): boolean | void => {
+                if (filter.guild?.(guild)) return bot.cache.guilds.memory.delete(guild.id);
+
+                if (guild.channels)
+                    guild.channels.forEach((channel: T['channel']) => {
+                        if (filter.channel?.(channel)) guild.channels.delete(channel.id);
+                    });
+
+                if (guild.members)
+                    guild.members.forEach((member: T['member']) => {
+                        if (filter.member?.(member)) guild.members.delete(member.id);
+                    });
+
+                if (guild.roles)
+                    guild.roles.forEach((role: T['role']) => {
+                        if (filter.role?.(role)) guild.roles.delete(role.id);
+                    });
             });
 
             bot.cache.users.memory.forEach((user) => {
-                if (user.id !== bot.id && Date.now() - user.lastInteractedTime > options.maxCacheInactiveTime!) bot.cache.guilds.delete(user.id);
+                if (filter.user?.(user)) bot.cache.users.memory.delete(user.id);
             });
-        }, options.cacheSweepInterval);
+        }, interval);
     }
 
     return bot;
@@ -737,8 +749,26 @@ export interface CreateProxyCacheOptions {
             role?: boolean;
         };
     };
-    /** The amount of time in ms to keep an object in the cache when it's inactive, works for: channels (excluding guild channels), guilds, users cache. Defaults to infinity. */
-    maxCacheInactiveTime?: number;
-    /** The amount of time in ms to run cache sweeper that removes the objects from the cache that is in the cache for longer than `options.maxCacheAliveTime`. Defaults to 5 minutes. */
-    cacheSweepInterval?: number;
+    /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
+    sweeper?: {
+        /** The amount of time in ms to run cache sweeper that removes the objects from the cache that is in the cache for longer than `options.maxCacheAliveTime`. */
+        interval: number;
+        /**
+         * Filters to decide which objects to remove from the cache. Defaults to removing nothing.
+         *
+         * Note: Make use of the `lastInteractedTime` property in the objects to implement an NRU (Not Recently Used) cache if you'd like.
+         */
+        filter: {
+            /** Filter to decide whether or not to remove a channel from the cache. */
+            channel?: (channel: Channel & { lastInteractedTime: number }) => boolean;
+            /** Filter to decide whether or not to remove a guild from the cache. */
+            guild?: (guild: Guild & { lastInteractedTime: number }) => boolean;
+            /** Filter to decide whether or not to remove a member from the cache. */
+            member?: (member: Member & { lastInteractedTime: number }) => boolean;
+            /** Filter to decide whether or not to remove a role from the cache. */
+            role?: (role: Role & { lastInteractedTime: number }) => boolean;
+            /** Filter to decide whether or not to remove a user from the cache. */
+            user?: (user: User & { lastInteractedTime: number }) => boolean;
+        };
+    };
 }

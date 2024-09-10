@@ -97,13 +97,38 @@ This provides the following props: (should be self explanatory with intellisense
 -   `options.bulk.removeRole`
 -   `options.bulk.replaceInternalBulkRemover` - To set props under this prop to tell the cache proxy whether or not to run internal bulk removers.
 
-### `options.maxCacheInactiveTime`:
+### `options.sweeper`:
 
-Lets you provide the amount of inactive time (in milliseconds) for a cached object after which it should be removed from cache. Useful if for example you want to cache only active guilds.
+Lets you define options for sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper.
 
-### `options.cacheSweepInterval`:
+This provides the following props:
 
-Lets you define the interval (in milliseconds) in which the cache sweeper should check for inactive objects based on maxCacheInactiveTime to clear them.
+-   `options.sweeper.interval`
+-   `options.sweeper.filter`
+
+#### `options.sweeper.interval`:
+
+The interval (in milliseconds) in which the cache sweeper should run.
+
+#### `options.sweeper.filter`:
+
+Lets you provide filter functions to decide which object to remove from cache and which to keep. Defaults to removing nothing from the cache, so you should provide your own filters if you enable cache sweeper.
+
+Note: You can use the `lastInteractedTime` property in the object to implement an NRU (Not Recently Used) cache if you'd like. For example, if you'd like to only remove the members that aren't accessed in the last 15 minutes and isn't the bot member, you can do:
+
+```js
+sweeper: {
+    // Run the sweeper every 5 minutes
+    interval: 300000,
+    filter: {
+        member: (member) => {
+            // Remove member from cache if it hasn't been accessed in the last 15 minutes and if the member isn't bot member
+            if (Date.now() - member.lastInteractedTime > 900000 && member.id !== bot.id) return true;
+            else return false;
+        }
+    }
+}
+```
 
 # Questions / Support:
 
