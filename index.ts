@@ -757,30 +757,25 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
     setItem?: (table: 'channels' | 'guilds' | 'members' | 'roles' | 'users', item: any) => Promise<unknown>;
     /** Handler to delete an object in a specific table. */
     removeItem?: (...args: [table: 'channels' | 'guilds' | 'roles' | 'users', id: bigint] | [table: 'members', id: bigint, guildId: bigint]) => Promise<unknown>;
+    /**
+     * Options for handling the removal of objects that may trigger bulk modifications or deletions of associated entities.
+     *
+     * This allows for performance optimization by consolidating multiple operations into a single action, rather than executing hundreds of queries.
+     */
     bulk?: {
-        /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a guild is deleted, you want to make sure all channels, roles, and members are removed as well. */
+        /** Handler for the removal of guilds and their associated entities (e.g., channels, members and roles). */
         removeGuild?: (id: bigint) => Promise<unknown>;
-        /** Handler used to remove multiple objects in bulk. Instead of making hundreds of queries, you can optimize here using your preferred form. For example, when a role is deleted, you want to make sure all members who have this role are edited as well. */
+        /** Handler for the removal of roles and their associated entities (e.g., members having this role). */
         removeRole?: (id: bigint) => Promise<unknown>;
-        /** Options to choose whether or not to replace internal removers. */
+        /**
+         * Options to choose whether or not to replace internal removers.
+         *
+         * By default, the proxy will handle the bulk modifications and deletions of associated entities from in-memory cache. You can override this behavior by setting this option to `true`.
+         */
         replaceInternalBulkRemover?: {
-            /**
-             * Whether or not to replace internal channel remover.
-             *
-             * By default, the proxy will bulk remove channel from memory. You can override this behavior by setting this option to `true`.
-             */
-            channel?: boolean;
-            /**
-             * Whether or not to replace internal guild remover.
-             *
-             * By default, the proxy will bulk remove guilds from memory. You can override this behavior by setting this option to `true`.
-             */
+            /** Whether or not to replace the internal guild remover. */
             guild?: boolean;
-            /**
-             * Whether or not to replace internal role remover.
-             *
-             * By default, the proxy will bulk remove role from memory. You can override this behavior by setting this option to `true`.
-             */
+            /** Whether or not to replace the internal role remover. */
             role?: boolean;
         };
     };
@@ -799,7 +794,7 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
     };
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
-        /** The interval in ms at which the cache sweeper will run the provided filter functions. */
+        /** The interval (in milliseconds) at which the cache sweeper should run the provided filter functions. */
         interval: number;
         /**
          * Filters to decide which objects to remove from the cache. Defaults to removing nothing.

@@ -89,7 +89,9 @@ shouldCache: {
 
 ### `options.bulk`:
 
-Lets you define how to deal with bulk removal of data. Useful to provide when you use cache outside memory. For example, if you store channels individually and separately from a guild, say in a database, when a guild is deleted, all of those channels will be deleted individually in individual queries, which is not ideal, so you can use `options.bulk.removeGuild` to delete the guild and all the channels related to that guild as one query or so, whichever gives better performance.
+This option allows you to specify how to handle the removal of objects that may trigger bulk modifications or deletions of associated entities.
+
+For example, if you store guild channels individually in a database separate from the guild itself, deleting a guild could result in each channel being deleted one by one through individual queries. This method can be inefficient, especially as the number of channels increases. To improve permformance, you can use `options.bulk.removeGuild` to remove the guild and all associated channels in a single query.
 
 This provides the following props: (should be self explanatory with intellisense)
 
@@ -99,7 +101,7 @@ This provides the following props: (should be self explanatory with intellisense
 
 ### `options.sweeper`:
 
-Lets you define options for sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper.
+This option allows you to specify options for sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper.
 
 This provides the following props:
 
@@ -108,11 +110,11 @@ This provides the following props:
 
 #### `options.sweeper.interval`:
 
-The interval (in milliseconds) in which the cache sweeper should run.
+The interval (in milliseconds) at which the cache sweeper should run the provided filter functions.
 
 #### `options.sweeper.filter`:
 
-Lets you provide filter functions to decide which object to remove from cache and which to keep. Defaults to removing nothing from the cache, so you should provide your own filters if you enable cache sweeper.
+This option allows you to provide filter functions to decide which object to remove from cache and which to keep. Defaults to removing nothing from the cache, so you should provide your own filters if you enable cache sweeper.
 
 Note: You can use the `lastInteractedTime` property in the object to implement an NRU (Not Recently Used) cache if you'd like. For example, if you'd like to only remove the members that aren't accessed in the last 15 minutes and isn't the bot member, you can do:
 
