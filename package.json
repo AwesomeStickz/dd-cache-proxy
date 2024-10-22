@@ -29,6 +29,6 @@
     "typescript": "^5.4.5"
   },
   "peerDependencies": {
-    "@discordeno/bot": "19.0.0-next.352887c"
+    "@discordeno/bot": "19.0.0-next.b85c6d5"
   }
 }
