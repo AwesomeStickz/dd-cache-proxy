@@ -18,31 +18,31 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
         options: CreateProxyCacheOptions<T>;
         channels: {
             guildIDs: Collection<bigint, bigint>;
-            memory: Collection<bigint, T['channel']>;
-            get: (id: bigint) => Promise<T['channel'] | undefined>;
+            memory: Collection<bigint, LastInteractedTimeTrackedRecord<T['channel']>>;
+            get: (id: bigint) => Promise<LastInteractedTimeTrackedRecord<T['channel']> | undefined>;
             set: (value: T['channel'], currentTry?: number) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         guilds: {
-            memory: Collection<bigint, T['guild']>;
-            get: (id: bigint) => Promise<T['guild'] | undefined>;
+            memory: Collection<bigint, LastInteractedTimeTrackedRecord<T['guild']>>;
+            get: (id: bigint) => Promise<LastInteractedTimeTrackedRecord<T['guild']> | undefined>;
             set: (value: T['guild']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         members: {
-            get: (id: bigint, guildId: bigint) => Promise<T['member'] | undefined>;
+            get: (id: bigint, guildId: bigint) => Promise<LastInteractedTimeTrackedRecord<T['member']> | undefined>;
             set: (value: T['member'], currentTry?: number) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         roles: {
             guildIDs: Collection<bigint, bigint>;
-            get: (id: bigint) => Promise<T['role'] | undefined>;
+            get: (id: bigint) => Promise<LastInteractedTimeTrackedRecord<T['role']> | undefined>;
             set: (value: T['role'], currentTry?: number) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         users: {
-            memory: Collection<bigint, T['user']>;
-            get: (id: bigint) => Promise<T['user'] | undefined>;
+            memory: Collection<bigint, LastInteractedTimeTrackedRecord<T['user']>>;
+            get: (id: bigint) => Promise<LastInteractedTimeTrackedRecord<T['user']> | undefined>;
             set: (value: T['user']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
@@ -142,7 +142,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.guilds = {
         memory: new Collection(),
-        get: async (id: BigString): Promise<T['guild'] | undefined> => {
+        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['guild']> | undefined> => {
             // Force into bigint form
             const guildID = BigInt(id);
 
@@ -192,7 +192,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.users = {
         memory: new Collection(),
-        get: async (id: BigString): Promise<T['user'] | undefined> => {
+        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['user']> | undefined> => {
             // Force into bigint form
             const userID = BigInt(id);
 
@@ -241,7 +241,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.roles = {
         guildIDs: new Collection(),
-        get: async (id: BigString): Promise<T['role'] | undefined> => {
+        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['role']> | undefined> => {
             // Force into bigint form
             const roleID = BigInt(id);
 
@@ -312,7 +312,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
     };
 
     bot.cache.members = {
-        get: async (id: BigString, guildId: BigString): Promise<T['member'] | undefined> => {
+        get: async (id: BigString, guildId: BigString): Promise<LastInteractedTimeTrackedRecord<T['member']> | undefined> => {
             // Force into bigint form
             const memberID = BigInt(id);
             const guildID = BigInt(guildId);
@@ -381,7 +381,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
     bot.cache.channels = {
         guildIDs: new Collection(),
         memory: new Collection(),
-        get: async (id: BigString): Promise<T['channel'] | undefined> => {
+        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['channel']> | undefined> => {
             // Force into bigint form
             const channelID = BigInt(id);
 
@@ -519,7 +519,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // Get the guild id in bigint
             const guildId = bot.transformers.snowflake(payload.id);
             // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
-            const preCacheGuild: T['guild'] = {
+            const preCacheGuild: LastInteractedTimeTrackedRecord<T['guild']> = {
                 toggles: new GuildToggles(payload),
                 name: payload.name,
                 memberCount: payload.member_count ?? payload.approximate_member_count ?? 0,
@@ -805,15 +805,20 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
          */
         filter: {
             /** Filter to decide whether or not to remove a channel from the cache. */
-            channel?: (channel: T['channel'] & { lastInteractedTime: number }) => boolean;
+            channel?: (channel: LastInteractedTimeTrackedRecord<T['channel']>) => boolean;
             /** Filter to decide whether or not to remove a guild from the cache. */
-            guild?: (guild: T['guild'] & { lastInteractedTime: number }) => boolean;
+            guild?: (guild: LastInteractedTimeTrackedRecord<T['guild']>) => boolean;
             /** Filter to decide whether or not to remove a member from the cache. */
-            member?: (member: T['member'] & { lastInteractedTime: number }) => boolean;
+            member?: (member: LastInteractedTimeTrackedRecord<T['member']>) => boolean;
             /** Filter to decide whether or not to remove a role from the cache. */
-            role?: (role: T['role'] & { lastInteractedTime: number }) => boolean;
+            role?: (role: LastInteractedTimeTrackedRecord<T['role']>) => boolean;
             /** Filter to decide whether or not to remove a user from the cache. */
-            user?: (user: T['user'] & { lastInteractedTime: number }) => boolean;
+            user?: (user: LastInteractedTimeTrackedRecord<T['user']>) => boolean;
         };
     };
 }
+
+export type LastInteractedTimeTrackedRecord<T> = T & {
+    /** The UNIX timestamp representing the time this object was last accessed or modified. */
+    lastInteractedTime: number;
+};
