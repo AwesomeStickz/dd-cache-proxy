@@ -643,32 +643,35 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
         const { filter, interval } = options.sweeper;
 
         setInterval(() => {
-            bot.cache.channels.memory.forEach((channel) => {
-                if (filter.channel?.(channel)) bot.cache.channels.memory.delete(channel.id);
-            });
+            if (filter.channel)
+                bot.cache.channels.memory.forEach((channel) => {
+                    if (filter.channel?.(channel)) bot.cache.channels.memory.delete(channel.id);
+                });
 
-            bot.cache.guilds.memory.forEach((guild): boolean | void => {
-                if (filter.guild?.(guild)) return bot.cache.guilds.memory.delete(guild.id);
+            if (filter.guild || filter.channel || filter.member || filter.role)
+                bot.cache.guilds.memory.forEach((guild): boolean | void => {
+                    if (filter.guild?.(guild)) return bot.cache.guilds.memory.delete(guild.id);
 
-                if (guild.channels)
-                    guild.channels.forEach((channel: T['channel']) => {
-                        if (filter.channel?.(channel)) guild.channels.delete(channel.id);
-                    });
+                    if (guild.channels && filter.channel)
+                        guild.channels.forEach((channel: T['channel']) => {
+                            if (filter.channel?.(channel)) guild.channels.delete(channel.id);
+                        });
 
-                if (guild.members)
-                    guild.members.forEach((member: T['member']) => {
-                        if (filter.member?.(member)) guild.members.delete(member.id);
-                    });
+                    if (guild.members && filter.member)
+                        guild.members.forEach((member: T['member']) => {
+                            if (filter.member?.(member)) guild.members.delete(member.id);
+                        });
 
-                if (guild.roles)
-                    guild.roles.forEach((role: T['role']) => {
-                        if (filter.role?.(role)) guild.roles.delete(role.id);
-                    });
-            });
+                    if (guild.roles && filter.role)
+                        guild.roles.forEach((role: T['role']) => {
+                            if (filter.role?.(role)) guild.roles.delete(role.id);
+                        });
+                });
 
-            bot.cache.users.memory.forEach((user) => {
-                if (filter.user?.(user)) bot.cache.users.memory.delete(user.id);
-            });
+            if (filter.user)
+                bot.cache.users.memory.forEach((user) => {
+                    if (filter.user?.(user)) bot.cache.users.memory.delete(user.id);
+                });
         }, interval);
     }
 
