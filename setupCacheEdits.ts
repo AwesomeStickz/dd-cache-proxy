@@ -1,7 +1,7 @@
 import { Bot, DiscordGuildMemberAdd, DiscordGuildMemberRemove } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
-export const setupCacheEdits = <B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) => {
+export const setupCacheEdits = <T extends ProxyCacheTypes, B extends Bot>(bot: BotWithProxyCache<T, B>) => {
     const { GUILD_MEMBER_ADD, GUILD_MEMBER_REMOVE } = bot.handlers;
 
     bot.handlers.GUILD_MEMBER_ADD = async (_, data, shardId) => {

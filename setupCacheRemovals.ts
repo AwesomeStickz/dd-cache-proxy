@@ -1,7 +1,7 @@
 import { Bot, DiscordChannel, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
-export const setupCacheRemovals = <B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) => {
+export const setupCacheRemovals = <T extends ProxyCacheTypes, B extends Bot>(bot: BotWithProxyCache<T, B>) => {
     const { CHANNEL_DELETE, GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE, THREAD_DELETE } = bot.handlers;
 
     bot.handlers.CHANNEL_DELETE = (_, data, shardId) => {

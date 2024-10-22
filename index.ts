@@ -15,7 +15,7 @@ const pendingGuildsData = new Collection<
 
 export interface ProxyCacheProps<T extends ProxyCacheTypes> {
     cache: {
-        options: CreateProxyCacheOptions;
+        options: CreateProxyCacheOptions<T>;
         channels: {
             guildIDs: Collection<bigint, bigint>;
             memory: Collection<bigint, T['channel']>;
@@ -51,7 +51,7 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
 
 export type BotWithProxyCache<T extends ProxyCacheTypes, B extends Bot = Bot> = Omit<B, 'cache'> & ProxyCacheProps<T>;
 
-export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCacheTypes, B extends Bot = Bot>(rawBot: B, options: CreateProxyCacheOptions): BotWithProxyCache<T, B> => {
+export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCacheTypes, B extends Bot = Bot>(rawBot: B, options: CreateProxyCacheOptions<T>): BotWithProxyCache<T, B> => {
     // @ts-ignore why is this failing?
     const bot = rawBot as BotWithProxyCache<T, B>;
 
@@ -683,32 +683,32 @@ export type ProxyCacheTypes<T extends boolean = true> = {
     user: T extends true ? User : any;
 };
 
-export interface CreateProxyCacheOptions {
+export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
     /** Configure the exact properties you wish to have in each object. */
     desiredProps?: {
         /** The properties you want to keep in a channel object. */
-        channels?: (keyof Channel)[];
+        channels?: (keyof T['channel'])[];
         /** The properties you want to keep in a guild object. */
-        guilds?: (keyof Guild)[];
+        guilds?: (keyof T['guild'])[];
         /** The properties you want to keep in a member object. */
-        members?: (keyof Member)[];
+        members?: (keyof T['member'])[];
         /** The properties you want to keep in a role object. */
-        roles?: (keyof Role)[];
+        roles?: (keyof T['role'])[];
         /** The properties you want to keep in a user object. */
-        users?: (keyof User)[];
+        users?: (keyof T['user'])[];
     };
     /** Configure the properties you do NOT want in each object. */
     undesiredProps?: {
         /** The properties you do NOT want in a channel object. */
-        channels?: (keyof Channel)[];
+        channels?: (keyof T['channel'])[];
         /** The properties you do NOT want in a guild object. */
-        guilds?: (keyof Guild)[];
+        guilds?: (keyof T['guild'])[];
         /** The properties you do NOT want in a member object. */
-        members?: (keyof Member)[];
+        members?: (keyof T['member'])[];
         /** The properties you do NOT want in a role object. */
-        roles?: (keyof Role)[];
+        roles?: (keyof T['role'])[];
         /** The properties you do NOT want in a user object. */
-        users?: (keyof User)[];
+        users?: (keyof T['user'])[];
     };
     /**
      * Options to choose how the proxy will cache everything.
@@ -805,15 +805,15 @@ export interface CreateProxyCacheOptions {
          */
         filter: {
             /** Filter to decide whether or not to remove a channel from the cache. */
-            channel?: (channel: Channel & { lastInteractedTime: number }) => boolean;
+            channel?: (channel: T['channel'] & { lastInteractedTime: number }) => boolean;
             /** Filter to decide whether or not to remove a guild from the cache. */
-            guild?: (guild: Guild & { lastInteractedTime: number }) => boolean;
+            guild?: (guild: T['guild'] & { lastInteractedTime: number }) => boolean;
             /** Filter to decide whether or not to remove a member from the cache. */
-            member?: (member: Member & { lastInteractedTime: number }) => boolean;
+            member?: (member: T['member'] & { lastInteractedTime: number }) => boolean;
             /** Filter to decide whether or not to remove a role from the cache. */
-            role?: (role: Role & { lastInteractedTime: number }) => boolean;
+            role?: (role: T['role'] & { lastInteractedTime: number }) => boolean;
             /** Filter to decide whether or not to remove a user from the cache. */
-            user?: (user: User & { lastInteractedTime: number }) => boolean;
+            user?: (user: T['user'] & { lastInteractedTime: number }) => boolean;
         };
     };
 }

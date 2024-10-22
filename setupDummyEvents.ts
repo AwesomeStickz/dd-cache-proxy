@@ -3,7 +3,7 @@ import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
 const ignore = () => {};
 
-export const setupDummyEvents = <B extends Bot>(bot: BotWithProxyCache<ProxyCacheTypes, B>) => {
+export const setupDummyEvents = <T extends ProxyCacheTypes, B extends Bot>(bot: BotWithProxyCache<T, B>) => {
     const eventsRequired = new Set<keyof EventHandlers>();
     const { cacheInMemory, cacheOutsideMemory } = bot.cache.options || {};
 
