@@ -796,7 +796,7 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
     };
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
-        /** The amount of time in ms to run cache sweeper that removes the objects from the cache that is in the cache for longer than `options.maxCacheAliveTime`. */
+        /** The interval in ms at which the cache sweeper will run the provided filter functions. */
         interval: number;
         /**
          * Filters to decide which objects to remove from the cache. Defaults to removing nothing.
