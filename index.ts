@@ -1,4 +1,4 @@
-import { BigString, Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
+import { Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
 import { iconHashToBigInt } from '@discordeno/utils';
 import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
@@ -142,13 +142,10 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
     bot.cache.guilds = {
         memory: new Collection(),
-        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['guild']> | undefined> => {
-            // Force into bigint form
-            const guildID = BigInt(id);
-
+        get: async (guildId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.guilds) {
-                const guild = bot.cache.guilds.memory.get(guildID);
+                const guild = bot.cache.guilds.memory.get(guildId);
                 if (guild) {
                     guild.lastInteractedTime = Date.now();
 
@@ -159,17 +156,17 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.guilds || !options.getItem) return;
 
-            const stored = await options.getItem('guild', guildID);
+            const stored = await options.getItem('guild', guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.guilds) bot.cache.guilds.memory.set(guildID, stored);
+                if (options.cacheInMemory?.guilds) bot.cache.guilds.memory.set(guildId, stored);
             }
 
             return stored;
         },
-        set: async (guild: T['guild']): Promise<void> => {
+        set: async (guild) => {
             // Should this be cached or not?
             if (options.shouldCache?.guild && !(await options.shouldCache.guild(guild))) return;
 
@@ -180,25 +177,21 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.guilds && options.setItem) await options.setItem('guild', guild);
         },
-        delete: async (id: BigString): Promise<void> => {
-            // Force id to bigint
-            const guildID = BigInt(id);
+        delete: async (guildId) => {
             // Remove from memory
-            bot.cache.guilds.memory.delete(guildID);
+            bot.cache.guilds.memory.delete(guildId);
+
             // Remove from non-memory cache
-            await options.bulk?.removeGuild?.(guildID);
+            await options.bulk?.removeGuild?.(guildId);
         },
     };
 
     bot.cache.users = {
         memory: new Collection(),
-        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['user']> | undefined> => {
-            // Force into bigint form
-            const userID = BigInt(id);
-
+        get: async (userId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.users) {
-                const user = bot.cache.users.memory.get(userID);
+                const user = bot.cache.users.memory.get(userId);
                 if (user) {
                     user.lastInteractedTime = Date.now();
 
@@ -209,17 +202,17 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.users || !options.getItem) return;
 
-            const stored = await options.getItem('user', userID);
+            const stored = await options.getItem('user', userId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.users) bot.cache.users.memory.set(userID, stored);
+                if (options.cacheInMemory?.users) bot.cache.users.memory.set(userId, stored);
             }
 
             return stored;
         },
-        set: async (user: T['user']): Promise<void> => {
+        set: async (user) => {
             if (options.shouldCache?.user && !(await options.shouldCache.user(user))) return;
 
             user.lastInteractedTime = Date.now();
@@ -229,29 +222,25 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.users && options.setItem) await options.setItem('user', user);
         },
-        delete: async (id: BigString): Promise<void> => {
-            // Force id to bigint
-            const userID = BigInt(id);
+        delete: async (userId) => {
             // Remove from memory
-            bot.cache.users.memory.delete(userID);
+            bot.cache.users.memory.delete(userId);
+
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('user', userID);
+            if (options.removeItem) await options.removeItem('user', userId);
         },
     };
 
     bot.cache.roles = {
         guildIDs: new Collection(),
-        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['role']> | undefined> => {
-            // Force into bigint form
-            const roleID = BigInt(id);
-
+        get: async (roleId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.roles) {
                 // If guilds are cached, roles will be inside them
                 if (options.cacheInMemory?.guilds) {
-                    const guildID = bot.cache.roles.guildIDs.get(roleID);
+                    const guildID = bot.cache.roles.guildIDs.get(roleId);
                     if (guildID) {
-                        const role = bot.cache.guilds.memory.get(guildID)?.roles?.get(roleID);
+                        const role = bot.cache.guilds.memory.get(guildID)?.roles?.get(roleId);
                         if (role) {
                             role.lastInteractedTime = Date.now();
 
@@ -264,7 +253,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.roles || !options.getItem) return;
 
-            const stored = await options.getItem('role', roleID);
+            const stored = await options.getItem('role', roleId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
@@ -274,7 +263,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
             return stored;
         },
-        set: async (role: T['role']): Promise<void> => {
+        set: async (role) => {
             if (options.shouldCache?.role && !(await options.shouldCache.role(role))) return;
 
             role.lastInteractedTime = Date.now();
@@ -300,28 +289,23 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.roles && options.setItem) await options.setItem('role', role);
         },
-        delete: async (id: BigString): Promise<void> => {
-            // Force id to bigint
-            const roleID = BigInt(id);
+        delete: async (roleId) => {
             // Remove from memory
-            bot.cache.guilds.memory.get(bot.cache.roles.guildIDs.get(roleID)!)?.roles?.delete(roleID);
-            bot.cache.roles.guildIDs.delete(roleID);
+            bot.cache.guilds.memory.get(bot.cache.roles.guildIDs.get(roleId)!)?.roles?.delete(roleId);
+            bot.cache.roles.guildIDs.delete(roleId);
+
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('role', roleID);
+            if (options.removeItem) await options.removeItem('role', roleId);
         },
     };
 
     bot.cache.members = {
-        get: async (id: BigString, guildId: BigString): Promise<LastInteractedTimeTrackedRecord<T['member']> | undefined> => {
-            // Force into bigint form
-            const memberID = BigInt(id);
-            const guildID = BigInt(guildId);
-
+        get: async (memberId, guildId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.members) {
                 // If guilds are cached, members will be inside them
                 if (options.cacheInMemory?.guilds) {
-                    const member = bot.cache.guilds.memory.get(guildID)?.members?.get(memberID);
+                    const member = bot.cache.guilds.memory.get(guildId)?.members?.get(memberId);
                     if (member) {
                         member.lastInteractedTime = Date.now();
 
@@ -333,7 +317,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.members || !options.getItem) return;
 
-            const stored = await options.getItem('member', memberID, guildID);
+            const stored = await options.getItem('member', memberId, guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
@@ -343,7 +327,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
 
             return stored;
         },
-        set: async (member: T['member']): Promise<void> => {
+        set: async (member) => {
             if (options.shouldCache?.member && !(await options.shouldCache.member(member))) return;
 
             member.lastInteractedTime = Date.now();
@@ -366,32 +350,26 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.members && options.setItem) await options.setItem('member', member);
         },
-        delete: async (id: BigString, guildId: BigString): Promise<void> => {
-            // Force id to bigint
-            const memberID = BigInt(id);
-            const guildID = BigInt(guildId);
-
+        delete: async (memberId, guildId) => {
             // Remove from memory
-            bot.cache.guilds.memory.get(guildID)?.members?.delete(memberID);
+            bot.cache.guilds.memory.get(guildId)?.members?.delete(memberId);
+
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('member', memberID, guildID);
+            if (options.removeItem) await options.removeItem('member', memberId, guildId);
         },
     };
 
     bot.cache.channels = {
         guildIDs: new Collection(),
         memory: new Collection(),
-        get: async (id: BigString): Promise<LastInteractedTimeTrackedRecord<T['channel']> | undefined> => {
-            // Force into bigint form
-            const channelID = BigInt(id);
-
+        get: async (channelId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.channels) {
                 // If guilds are cached, channels will be inside them
                 if (options.cacheInMemory?.guilds) {
-                    const guildID = bot.cache.channels.guildIDs.get(channelID);
+                    const guildID = bot.cache.channels.guildIDs.get(channelId);
                     if (guildID) {
-                        const channel = bot.cache.guilds.memory.get(guildID)?.channels?.get(channelID);
+                        const channel = bot.cache.guilds.memory.get(guildID)?.channels?.get(channelId);
                         if (channel) {
                             channel.lastInteractedTime = Date.now();
 
@@ -399,7 +377,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
                         }
                     } else {
                         // Return from cache.channels if this channel isn't in a guild
-                        const channel = bot.cache.channels.memory.get(channelID);
+                        const channel = bot.cache.channels.memory.get(channelId);
                         if (channel) {
                             channel.lastInteractedTime = Date.now();
 
@@ -407,7 +385,7 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
                         }
                     }
                 } else {
-                    const channel = bot.cache.channels.memory.get(channelID);
+                    const channel = bot.cache.channels.memory.get(channelId);
                     if (channel) {
                         channel.lastInteractedTime = Date.now();
 
@@ -419,17 +397,17 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.channels || !options.getItem) return;
 
-            const stored = await options.getItem('channel', channelID);
+            const stored = await options.getItem('channel', channelId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.channels) bot.cache.channels.memory.set(channelID, stored);
+                if (options.cacheInMemory?.channels) bot.cache.channels.memory.set(channelId, stored);
             }
 
             return stored;
         },
-        set: async (channel: T['channel']): Promise<void> => {
+        set: async (channel) => {
             if (options.shouldCache?.channel && !(await options.shouldCache.channel(channel))) return;
 
             channel.lastInteractedTime = Date.now();
@@ -455,15 +433,14 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.channels && options.setItem) await options.setItem('channel', channel);
         },
-        delete: async (id: BigString): Promise<void> => {
-            // Force id to bigint
-            const channelID = BigInt(id);
+        delete: async (channelId) => {
             // Remove from memory
-            bot.cache.channels.memory.delete(channelID);
-            bot.cache.guilds.memory.get(bot.cache.channels.guildIDs.get(channelID)!)?.channels?.delete(channelID);
-            bot.cache.channels.guildIDs.delete(channelID);
+            bot.cache.channels.memory.delete(channelId);
+            bot.cache.guilds.memory.get(bot.cache.channels.guildIDs.get(channelId)!)?.channels?.delete(channelId);
+            bot.cache.channels.guildIDs.delete(channelId);
+
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('channel', channelID);
+            if (options.removeItem) await options.removeItem('channel', channelId);
         },
     };
 
