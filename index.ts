@@ -20,7 +20,7 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
             guildIds: Collection<bigint, bigint>;
             memory: Collection<bigint, LastInteractedTimeTrackedRecord<T['channel']>>;
             get: (id: bigint) => Promise<LastInteractedTimeTrackedRecord<T['channel']> | undefined>;
-            set: (value: T['channel'], currentTry?: number) => Promise<void>;
+            set: (value: T['channel']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         guilds: {
@@ -31,13 +31,13 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes> {
         };
         members: {
             get: (id: bigint, guildId: bigint) => Promise<LastInteractedTimeTrackedRecord<T['member']> | undefined>;
-            set: (value: T['member'], currentTry?: number) => Promise<void>;
+            set: (value: T['member']) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         roles: {
             guildIds: Collection<bigint, bigint>;
             get: (id: bigint) => Promise<LastInteractedTimeTrackedRecord<T['role']> | undefined>;
-            set: (value: T['role'], currentTry?: number) => Promise<void>;
+            set: (value: T['role']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         users: {
