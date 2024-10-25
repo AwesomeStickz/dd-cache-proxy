@@ -540,9 +540,9 @@ export const createProxyCache = <T extends ProxyCacheTypes<boolean> = ProxyCache
         const pendingGuildData = pendingGuildsData.get(old.id);
 
         if (pendingGuildData) {
-            if (pendingGuildData.channels?.size) old.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
-            if (pendingGuildData.members?.size) args.members = new Collection([...args.members, ...pendingGuildData.members]);
-            if (pendingGuildData.roles?.size) old.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
+            if (pendingGuildData.channels?.size) args.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
+            if (pendingGuildData.members?.size) args.members = new Collection([...old.members, ...pendingGuildData.members]);
+            if (pendingGuildData.roles?.size) args.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
         }
 
         // Set approximate member count as member count if payload is from API
