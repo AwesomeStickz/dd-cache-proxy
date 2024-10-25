@@ -759,15 +759,15 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
     /** Configure the handlers that should be ran whenever something is about to be cached to determine whether it should or should not be cached. */
     shouldCache?: {
         /** Handler to check whether or not to cache this channel. */
-        channel?: (channel: Channel) => Promise<boolean>;
+        channel?: (channel: T['channel'] | Channel) => Promise<boolean>;
         /** Handler to check whether or not to cache this guild. */
-        guild?: (guild: Guild) => Promise<boolean>;
+        guild?: (guild: T['guild'] | Guild) => Promise<boolean>;
         /** Handler to check whether or not to cache this member. */
-        member?: (member: Member) => Promise<boolean>;
+        member?: (member: T['member'] | Member) => Promise<boolean>;
         /** Handler to check whether or not to cache this role. */
-        role?: (role: Role) => Promise<boolean>;
+        role?: (role: T['role'] | Role) => Promise<boolean>;
         /** Handler to check whether or not to cache this user. */
-        user?: (user: User) => Promise<boolean>;
+        user?: (user: T['user'] | User) => Promise<boolean>;
     };
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
