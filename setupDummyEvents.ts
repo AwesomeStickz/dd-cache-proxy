@@ -8,15 +8,15 @@ export const setupDummyEvents = <T extends ProxyCacheTypes, B extends Bot>(bot: 
     const { cacheInMemory, cacheOutsideMemory } = bot.cache.options || {};
 
     // Guild
-    if (cacheInMemory?.guilds || cacheOutsideMemory?.guilds) setupDummyGuildEvents(eventsRequired);
+    if (cacheInMemory?.guild || cacheOutsideMemory?.guild) setupDummyGuildEvents(eventsRequired);
     // Channel
-    if (cacheInMemory?.channels || cacheOutsideMemory?.channels) setupDummyChannelEvents(eventsRequired);
+    if (cacheInMemory?.channel || cacheOutsideMemory?.channel) setupDummyChannelEvents(eventsRequired);
     // Role
-    if (cacheInMemory?.roles || cacheOutsideMemory?.roles) setupDummyRoleEvents(eventsRequired);
+    if (cacheInMemory?.role || cacheOutsideMemory?.role) setupDummyRoleEvents(eventsRequired);
     // Member
-    if (cacheInMemory?.members || cacheOutsideMemory?.members) setupDummyMemberEvents(eventsRequired);
+    if (cacheInMemory?.member || cacheOutsideMemory?.member) setupDummyMemberEvents(eventsRequired);
     // User
-    if (cacheInMemory?.users || cacheOutsideMemory?.users) setupDummyUserEvents(eventsRequired);
+    if (cacheInMemory?.user || cacheOutsideMemory?.user) setupDummyUserEvents(eventsRequired);
 
     for (const event of eventsRequired) bot.events[event] ??= ignore;
 };

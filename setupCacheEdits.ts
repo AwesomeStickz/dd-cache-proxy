@@ -11,7 +11,8 @@ export const setupCacheEdits = <T extends ProxyCacheTypes, B extends Bot>(bot: B
         const guild = bot.cache.guilds.memory.get(guildID);
 
         if (guild) {
-            guild.memberCount++;
+            if (guild.memberCount) guild.memberCount++;
+
             await bot.cache.guilds.set(guild);
         }
 
@@ -25,7 +26,8 @@ export const setupCacheEdits = <T extends ProxyCacheTypes, B extends Bot>(bot: B
         const guild = bot.cache.guilds.memory.get(guildID);
 
         if (guild) {
-            guild.memberCount--;
+            if (guild.memberCount) guild.memberCount--;
+
             await bot.cache.guilds.set(guild);
         }
 
