@@ -68,20 +68,20 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
     const cacheOutsideMemoryDefault = bot.cache.options.cacheOutsideMemory.default;
 
     bot.cache.options.cacheInMemory = {
-        channels: cacheInMemoryDefault,
-        guilds: cacheInMemoryDefault,
-        members: cacheInMemoryDefault,
-        roles: cacheInMemoryDefault,
-        users: cacheInMemoryDefault,
+        channel: cacheInMemoryDefault,
+        guild: cacheInMemoryDefault,
+        member: cacheInMemoryDefault,
+        role: cacheInMemoryDefault,
+        user: cacheInMemoryDefault,
         ...bot.cache.options.cacheInMemory,
     };
 
     bot.cache.options.cacheOutsideMemory = {
-        channels: cacheOutsideMemoryDefault,
-        guilds: cacheOutsideMemoryDefault,
-        members: cacheOutsideMemoryDefault,
-        roles: cacheOutsideMemoryDefault,
-        users: cacheOutsideMemoryDefault,
+        channel: cacheOutsideMemoryDefault,
+        guild: cacheOutsideMemoryDefault,
+        member: cacheOutsideMemoryDefault,
+        role: cacheOutsideMemoryDefault,
+        user: cacheOutsideMemoryDefault,
         ...bot.cache.options.cacheOutsideMemory,
     };
 
@@ -147,7 +147,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         memory: new Collection(),
         get: async (guildId) => {
             // If available in memory, use it.
-            if (options.cacheInMemory?.guilds) {
+            if (options.cacheInMemory?.guild) {
                 const guild = bot.cache.guilds.memory.get(guildId);
                 if (guild) {
                     guild.lastInteractedTime = Date.now();
@@ -157,14 +157,14 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.guilds || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.guild || !options.getItem) return;
 
             const stored = await options.getItem('guild', guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.guilds) bot.cache.guilds.memory.set(guildId, stored);
+                if (options.cacheInMemory?.guild) bot.cache.guilds.memory.set(guildId, stored);
             }
 
             return stored;
@@ -176,9 +176,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             guild.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.guilds) bot.cache.guilds.memory.set(guild.id, guild);
+            if (options.cacheInMemory?.guild) bot.cache.guilds.memory.set(guild.id, guild);
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.guilds && options.setItem) await options.setItem('guild', guild);
+            if (options.cacheOutsideMemory?.guild && options.setItem) await options.setItem('guild', guild);
         },
         delete: async (guildId) => {
             // Remove from memory
@@ -193,7 +193,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         memory: new Collection(),
         get: async (userId) => {
             // If available in memory, use it.
-            if (options.cacheInMemory?.users) {
+            if (options.cacheInMemory?.user) {
                 const user = bot.cache.users.memory.get(userId);
                 if (user) {
                     user.lastInteractedTime = Date.now();
@@ -203,14 +203,14 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.users || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.user || !options.getItem) return;
 
             const stored = await options.getItem('user', userId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.users) bot.cache.users.memory.set(userId, stored);
+                if (options.cacheInMemory?.user) bot.cache.users.memory.set(userId, stored);
             }
 
             return stored;
@@ -221,9 +221,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             user.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.users) bot.cache.users.memory.set(user.id, user);
+            if (options.cacheInMemory?.user) bot.cache.users.memory.set(user.id, user);
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.users && options.setItem) await options.setItem('user', user);
+            if (options.cacheOutsideMemory?.user && options.setItem) await options.setItem('user', user);
         },
         delete: async (userId) => {
             // Remove from memory
@@ -238,9 +238,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         guildIds: new Collection(),
         get: async (roleId) => {
             // If available in memory, use it.
-            if (options.cacheInMemory?.roles) {
+            if (options.cacheInMemory?.role) {
                 // If guilds are cached, roles will be inside them
-                if (options.cacheInMemory?.guilds) {
+                if (options.cacheInMemory?.guild) {
                     const guildId = bot.cache.roles.guildIds.get(roleId);
                     if (guildId) {
                         const role = bot.cache.guilds.memory.get(guildId)?.roles?.get(roleId);
@@ -254,14 +254,14 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.roles || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.role || !options.getItem) return;
 
             const stored = await options.getItem('role', roleId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.roles) bot.cache.roles.set(stored);
+                if (options.cacheInMemory?.role) bot.cache.roles.set(stored);
             }
 
             return stored;
@@ -272,10 +272,10 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             role.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.roles) {
+            if (options.cacheInMemory?.role) {
                 if (role.guildId) bot.cache.roles.guildIds.set(role.id, role.guildId);
 
-                if (options.cacheInMemory?.guilds) {
+                if (options.cacheInMemory?.guild) {
                     const guildId = bot.cache.roles.guildIds.get(role.id);
                     if (guildId) {
                         const guild = bot.cache.guilds.memory.get(guildId);
@@ -290,7 +290,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                 }
             }
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.roles && options.setItem) await options.setItem('role', role);
+            if (options.cacheOutsideMemory?.role && options.setItem) await options.setItem('role', role);
         },
         delete: async (roleId) => {
             // Remove from memory
@@ -305,9 +305,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
     bot.cache.members = {
         get: async (memberId, guildId) => {
             // If available in memory, use it.
-            if (options.cacheInMemory?.members) {
+            if (options.cacheInMemory?.member) {
                 // If guilds are cached, members will be inside them
-                if (options.cacheInMemory?.guilds) {
+                if (options.cacheInMemory?.guild) {
                     const member = bot.cache.guilds.memory.get(guildId)?.members?.get(memberId);
                     if (member) {
                         member.lastInteractedTime = Date.now();
@@ -318,14 +318,14 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.members || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.member || !options.getItem) return;
 
             const stored = await options.getItem('member', memberId, guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.members) bot.cache.members.set(stored);
+                if (options.cacheInMemory?.member) bot.cache.members.set(stored);
             }
 
             return stored;
@@ -336,8 +336,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             member.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.members) {
-                if (options.cacheInMemory?.guilds) {
+            if (options.cacheInMemory?.member) {
+                if (options.cacheInMemory?.guild) {
                     if (member.guildId) {
                         const guild = bot.cache.guilds.memory.get(member.guildId);
                         if (guild) guild.members.set(member.id, member);
@@ -351,7 +351,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                 }
             }
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.members && options.setItem) await options.setItem('member', member);
+            if (options.cacheOutsideMemory?.member && options.setItem) await options.setItem('member', member);
         },
         delete: async (memberId, guildId) => {
             // Remove from memory
@@ -367,9 +367,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         memory: new Collection(),
         get: async (channelId) => {
             // If available in memory, use it.
-            if (options.cacheInMemory?.channels) {
+            if (options.cacheInMemory?.channel) {
                 // If guilds are cached, channels will be inside them
-                if (options.cacheInMemory?.guilds) {
+                if (options.cacheInMemory?.guild) {
                     const guildId = bot.cache.channels.guildIds.get(channelId);
                     if (guildId) {
                         const channel = bot.cache.guilds.memory.get(guildId)?.channels?.get(channelId);
@@ -398,14 +398,14 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.channels || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.channel || !options.getItem) return;
 
             const stored = await options.getItem('channel', channelId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.channels) bot.cache.channels.memory.set(channelId, stored);
+                if (options.cacheInMemory?.channel) bot.cache.channels.memory.set(channelId, stored);
             }
 
             return stored;
@@ -416,10 +416,10 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
             channel.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.channels) {
+            if (options.cacheInMemory?.channel) {
                 if (channel.guildId) bot.cache.channels.guildIds.set(channel.id, channel.guildId);
 
-                if (options.cacheInMemory?.guilds) {
+                if (options.cacheInMemory?.guild) {
                     const guildId = bot.cache.channels.guildIds.get(channel.id);
                     if (guildId) {
                         const guild = bot.cache.guilds.memory.get(guildId);
@@ -434,7 +434,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                 } else bot.cache.channels.memory.set(channel.id, channel);
             }
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.channels && options.setItem) await options.setItem('channel', channel);
+            if (options.cacheOutsideMemory?.channel && options.setItem) await options.setItem('channel', channel);
         },
         delete: async (channelId) => {
             // Remove from memory
@@ -463,11 +463,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.members?.includes(key)) args[key] = old[key] as never;
+            if (key === 'id' || options.desiredProps?.member?.includes(key)) args[key] = old[key] as never;
             // If undesired we skip
-            else if (options.undesiredProps?.members?.includes(key)) continue;
+            else if (options.undesiredProps?.member?.includes(key)) continue;
             // If member did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.members?.length) args[key] = old[key] as never;
+            else if (!options.desiredProps?.member?.length) args[key] = old[key] as never;
         }
 
         // Add to memory
@@ -490,11 +490,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.users?.includes(key)) args[key] = old[key] as never;
+            if (key === 'id' || options.desiredProps?.user?.includes(key)) args[key] = old[key] as never;
             // If undesired we skip
-            else if (options.undesiredProps?.users?.includes(key)) continue;
+            else if (options.undesiredProps?.user?.includes(key)) continue;
             // If user did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.users?.length) args[key] = old[key] as never;
+            else if (!options.desiredProps?.user?.length) args[key] = old[key] as never;
         }
 
         // Add to memory
@@ -504,7 +504,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
     };
 
     bot.transformers.customizers.guild = (_, payload, guild) => {
-        if (options.cacheInMemory?.guilds) {
+        if (options.cacheInMemory?.guild) {
             // Get the guild id in bigint
             const guildId = bot.transformers.snowflake(payload.id);
             // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
@@ -552,11 +552,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.guilds?.includes(key)) args[key] = old[key] as never;
+            if (key === 'id' || options.desiredProps?.guild?.includes(key)) args[key] = old[key] as never;
             // If undesired we skip
-            else if (options.undesiredProps?.guilds?.includes(key)) continue;
+            else if (options.undesiredProps?.guild?.includes(key)) continue;
             // If guild did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.guilds?.length) args[key] = old[key] as never;
+            else if (!options.desiredProps?.guild?.length) args[key] = old[key] as never;
         }
 
         const pendingGuildData = pendingGuildsData.get(old.id);
@@ -568,7 +568,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         }
 
         // Set approximate member count as member count if payload is from API
-        if (payload.approximate_member_count && options.desiredProps?.guilds?.includes('memberCount')) args.memberCount = payload.approximate_member_count;
+        if (payload.approximate_member_count && options.desiredProps?.guild?.includes('memberCount')) args.memberCount = payload.approximate_member_count;
 
         // Add to memory
         bot.cache.guilds.set(args);
@@ -600,11 +600,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.channels?.includes(key)) args[key] = old[key] as never;
+            if (key === 'id' || options.desiredProps?.channel?.includes(key)) args[key] = old[key] as never;
             // If undesired we skip
-            else if (options.undesiredProps?.channels?.includes(key)) continue;
+            else if (options.undesiredProps?.channel?.includes(key)) continue;
             // If channel did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.channels?.length) args[key] = old[key] as never;
+            else if (!options.desiredProps?.channel?.length) args[key] = old[key] as never;
         }
 
         // Add to memory
@@ -628,11 +628,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.roles?.includes(key)) args[key] = old[key] as never;
+            if (key === 'id' || options.desiredProps?.role?.includes(key)) args[key] = old[key] as never;
             // If undesired we skip
-            else if (options.undesiredProps?.roles?.includes(key)) continue;
+            else if (options.undesiredProps?.role?.includes(key)) continue;
             // If role did not say this is undesired and did not provide any desired props we accept it
-            else if (!options.desiredProps?.roles?.length) args[key] = old[key] as never;
+            else if (!options.desiredProps?.role?.length) args[key] = old[key] as never;
         }
 
         // Add to memory
@@ -709,28 +709,28 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends Ap
     /** Configure the exact properties you wish to have in each object. */
     desiredProps?: {
         /** The properties you want to keep in a channel object. */
-        channels?: DesiredPropsArray<T, 'channel'>;
+        channel?: DesiredPropsArray<T, 'channel'>;
         /** The properties you want to keep in a guild object. */
-        guilds?: DesiredPropsArray<T, 'guild'>;
+        guild?: DesiredPropsArray<T, 'guild'>;
         /** The properties you want to keep in a member object. */
-        members?: DesiredPropsArray<T, 'member'>;
+        member?: DesiredPropsArray<T, 'member'>;
         /** The properties you want to keep in a role object. */
-        roles?: DesiredPropsArray<T, 'role'>;
+        role?: DesiredPropsArray<T, 'role'>;
         /** The properties you want to keep in a user object. */
-        users?: DesiredPropsArray<T, 'user'>;
+        user?: DesiredPropsArray<T, 'user'>;
     };
     /** Configure the properties you do NOT want in each object. */
     undesiredProps?: {
         /** The properties you do NOT want in a channel object. */
-        channels?: DesiredPropsArray<T, 'channel'>;
+        channel?: DesiredPropsArray<T, 'channel'>;
         /** The properties you do NOT want in a guild object. */
-        guilds?: DesiredPropsArray<T, 'guild'>;
+        guild?: DesiredPropsArray<T, 'guild'>;
         /** The properties you do NOT want in a member object. */
-        members?: DesiredPropsArray<T, 'member'>;
+        member?: DesiredPropsArray<T, 'member'>;
         /** The properties you do NOT want in a role object. */
-        roles?: DesiredPropsArray<T, 'role'>;
+        role?: DesiredPropsArray<T, 'role'>;
         /** The properties you do NOT want in a user object. */
-        users?: DesiredPropsArray<T, 'user'>;
+        user?: DesiredPropsArray<T, 'user'>;
     };
     /**
      * Options to choose how the proxy will cache everything.
@@ -739,15 +739,15 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends Ap
      */
     cacheInMemory?: {
         /** Whether or not to cache channels. If guilds is enabled, then these are cached inside the guild object. */
-        channels?: boolean;
+        channel?: boolean;
         /** Whether or not to cache guilds. */
-        guilds?: boolean;
+        guild?: boolean;
         /** Whether or not to cache members. If guilds is enabled, then these are cached inside the guild object. */
-        members?: boolean;
+        member?: boolean;
         /** Whether or not the cache roles. If guilds is enabled, then these are cached inside the guild object.*/
-        roles?: boolean;
+        role?: boolean;
         /** Whether or not to cache users. */
-        users?: boolean;
+        user?: boolean;
         /** Default value for the properties that are not provided inside `cacheInMemory`. */
         default: boolean;
     };
@@ -758,15 +758,15 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends Ap
      */
     cacheOutsideMemory?: {
         /** Whether or not to cache channels. */
-        channels?: boolean;
+        channel?: boolean;
         /** Whether or not to cache guilds. */
-        guilds?: boolean;
+        guild?: boolean;
         /** Whether or not to cache members. */
-        members?: boolean;
+        member?: boolean;
         /** Whether or not to cache roles. */
-        roles?: boolean;
+        role?: boolean;
         /** Whether or not to cache users. */
-        users?: boolean;
+        user?: boolean;
         /** Default value for the properties that are not provided inside `cacheOutsideMemory`. */
         default: boolean;
     };
