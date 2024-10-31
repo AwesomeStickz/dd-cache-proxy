@@ -281,9 +281,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                         if (guild) guild.roles.set(role.id, role);
                         else {
                             const pendingGuild = pendingGuildsData.get(guildId);
-                            if (!pendingGuild) pendingGuildsData.set(guildId, { roles: new Collection() });
+                            if (!pendingGuild) pendingGuildsData.set(guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
 
-                            pendingGuildsData.get(guildId)?.roles?.set(role.id, role);
+                            pendingGuildsData.get(guildId)?.roles!.set(role.id, role);
                         }
                     } else console.warn(`[CACHE] Can't cache role(${role.id}) since guild.roles is enabled but a guild id was not found.`);
                 }
@@ -342,9 +342,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                         if (guild) guild.members.set(member.id, member);
                         else {
                             const pendingGuild = pendingGuildsData.get(member.guildId);
-                            if (!pendingGuild) pendingGuildsData.set(member.guildId, { members: new Collection() });
+                            if (!pendingGuild) pendingGuildsData.set(member.guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
 
-                            pendingGuildsData.get(member.guildId)?.members?.set(member.id, member);
+                            pendingGuildsData.get(member.guildId)?.members!.set(member.id, member);
                         }
                     } else console.warn(`[CACHE] Can't cache member(${member.id}) since guild.members is enabled but a guild id was not found.`);
                 }
@@ -425,9 +425,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                         if (guild) guild.channels.set(channel.id, channel);
                         else {
                             const pendingGuild = pendingGuildsData.get(guildId);
-                            if (!pendingGuild) pendingGuildsData.set(guildId, { channels: new Collection() });
+                            if (!pendingGuild) pendingGuildsData.set(guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
 
-                            pendingGuildsData.get(guildId)?.channels?.set(channel.id, channel);
+                            pendingGuildsData.get(guildId)?.channels!.set(channel.id, channel);
                         }
                     } else console.warn(`[CACHE] Can't cache channel(${channel.id}) since guild.channels is enabled but a guild id was not found.`);
                 } else bot.cache.channels.memory.set(channel.id, channel);
