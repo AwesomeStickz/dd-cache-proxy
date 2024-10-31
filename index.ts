@@ -520,6 +520,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         const pendingGuildData = pendingGuildsData.get(old.id);
 
         if (pendingGuildData) {
+            pendingGuildsData.delete(old.id);
+
             if (pendingGuildData.channels?.size) {
                 const oldChannels = old.channels.array().map((channel) => [channel.id, { ...channel, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['channel']>]);
 
