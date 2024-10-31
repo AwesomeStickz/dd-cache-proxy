@@ -1,5 +1,4 @@
-import { Bot, Channel, Collection, Guild, GuildToggles, Member, Role, User } from '@discordeno/bot';
-import { iconHashToBigInt } from '@discordeno/utils';
+import { Bot, Channel, Collection, Guild, Member, Role, User } from '@discordeno/bot';
 import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
 import { setupDummyEvents } from './setupDummyEvents.js';
@@ -447,11 +446,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         },
     };
 
-    // MAKE SURE TO NOT MOVE THIS BELOW GUILD TRANSFORMER
-    bot.transformers.customizers.member = (_, _payload, member) => {
-        // Create the object from existing transformer.
-        const old = member;
-
+    // MAKE SURE TO NOT MOVE THIS BELOW GUILD CUSTOMIZER
+    bot.transformers.customizers.member = (_, _payload, old) => {
         // Filter to desired args
         const args: LastInteractedTimeTrackedRecord<T['member']> = {
             id: old.id,
@@ -476,10 +472,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         return args;
     };
 
-    bot.transformers.customizers.user = (_, _payload, user) => {
-        // Create the object from existing transformer.
-        const old = user;
-
+    bot.transformers.customizers.user = (_, _payload, old) => {
         // Filter to desired args
         const args: LastInteractedTimeTrackedRecord<T['user']> = {
             id: old.id,
@@ -503,42 +496,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         return args;
     };
 
-    bot.transformers.customizers.guild = (_, payload, guild) => {
-        if (options.cacheInMemory?.guild) {
-            // Get the guild id in bigint
-            const guildId = bot.transformers.snowflake(payload.id);
-            // Make a raw guild object we can put in memory before running the old transformer which runs all the other transformers
-            const preCacheGuild: LastInteractedTimeTrackedRecord<T['guild']> = {
-                toggles: new GuildToggles(payload),
-                name: payload.name,
-                memberCount: payload.member_count ?? payload.approximate_member_count ?? 0,
-                shardId: guild.shardId,
-                icon: payload.icon ? iconHashToBigInt(payload.icon) : undefined,
-                channels: new Collection(),
-                members: new Collection(),
-                roles: new Collection(),
-                id: guildId,
-                // WEIRD EDGE CASE WITH BOT CREATED SERVERS
-                ownerId: payload.owner_id ? bot.transformers.snowflake(payload.owner_id) : 0n,
-                lastInteractedTime: Date.now(),
-            };
-
-            // CACHE DIRECT TO MEMORY BECAUSE OTHER TRANSFORMERS NEED THE GUILD IN CACHE
-            bot.cache.guilds.memory.set(preCacheGuild.id, preCacheGuild);
-        }
-
-        // Create the object from existing transformer.
-        const old: T['guild'] = {
-            ...guild,
-            channels: new Collection(guild.channels.array().map((channel) => [channel.id, { ...channel, lastInteractedTime: Date.now() } as LastInteractedTimeTrackedRecord<T['channel']>])),
-            members: new Collection(guild.members.array().map((member) => [member.id, { ...member, lastInteractedTime: Date.now() } as LastInteractedTimeTrackedRecord<T['member']>])),
-            roles: new Collection(guild.roles.array().map((role) => [role.id, { ...role, lastInteractedTime: Date.now() } as LastInteractedTimeTrackedRecord<T['role']>])),
-        };
-
-        options.shouldCache?.guild?.(old).then((shouldCache) => {
-            if (!shouldCache) bot.cache.guilds.memory.delete(old.id);
-        });
-
+    bot.transformers.customizers.guild = (_, payload, old) => {
         // Filter to desired args
         const args: LastInteractedTimeTrackedRecord<T['guild']> = {
             id: old.id,
@@ -562,9 +520,23 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         const pendingGuildData = pendingGuildsData.get(old.id);
 
         if (pendingGuildData) {
-            if (pendingGuildData.channels?.size) args.channels = new Collection([...old.channels, ...pendingGuildData.channels]);
-            if (pendingGuildData.members?.size) args.members = new Collection([...old.members, ...pendingGuildData.members]);
-            if (pendingGuildData.roles?.size) args.roles = new Collection([...old.roles, ...pendingGuildData.roles]);
+            if (pendingGuildData.channels?.size) {
+                const oldChannels = old.channels.array().map((channel) => [channel.id, { ...channel, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['channel']>]);
+
+                args.channels = new Collection([...oldChannels, ...pendingGuildData.channels]);
+            }
+
+            if (pendingGuildData.members?.size) {
+                const oldMembers = old.members.array().map((member) => [member.id, { ...member, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['member']>]);
+
+                args.members = new Collection([...oldMembers, ...pendingGuildData.members]);
+            }
+
+            if (pendingGuildData.roles?.size) {
+                const oldRoles = old.roles.array().map((role) => [role.id, { ...role, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['role']>]);
+
+                args.roles = new Collection([...oldRoles, ...pendingGuildData.roles]);
+            }
         }
 
         // Set approximate member count as member count if payload is from API
@@ -585,10 +557,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         return args;
     };
 
-    bot.transformers.customizers.channel = (_, _payload, channel) => {
-        // Create the object from existing transformer.
-        const old = channel;
-
+    bot.transformers.customizers.channel = (_, _payload, old) => {
         // Filter to desired args
         const args: LastInteractedTimeTrackedRecord<T['channel']> = {
             id: old.id,
@@ -613,10 +582,7 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         return args;
     };
 
-    bot.transformers.customizers.role = (_, _payload, role) => {
-        // Create the object from existing transformer.
-        const old = role;
-
+    bot.transformers.customizers.role = (_, _payload, old) => {
         // Filter to desired args
         const args: LastInteractedTimeTrackedRecord<T['role']> = {
             id: old.id,
