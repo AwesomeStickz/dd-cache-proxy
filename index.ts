@@ -3,49 +3,60 @@ import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
 import { setupDummyEvents } from './setupDummyEvents.js';
 
-type ApplyLastInteractedTimeToAll<T> = {
-    [P in keyof T]: LastInteractedTimeTrackedRecord<T[P]>;
+// Filter props from types of the objects based on the provided desired and undesired props
+type FilterProps<T, Desired extends keyof T, Undesired extends keyof T> = LastInteractedTimeTrackedRecord<Omit<Pick<T, Desired | ('id' extends keyof T ? 'id' : never)>, Undesired>>;
+
+type FilteredProxyCacheTypes<T extends ProxyCacheTypes, O extends CreateProxyCacheOptions<T> = CreateProxyCacheOptions<T>> = {
+    [P in keyof T]: P extends 'guild'
+        ? LastInteractedTimeTrackedRecord<
+              Omit<FilterProps<T[P], O['desiredProps'] extends Record<P, (keyof T[P])[]> ? O['desiredProps'][P][number] : keyof T[P], O['undesiredProps'] extends Record<P, (keyof T[P])[]> ? O['undesiredProps'][P][number] : never>, 'channels' | 'members' | 'roles' | 'lastInteractedTime'> & {
+                  channels?: Collection<bigint, FilteredProxyCacheTypes<T, O>['channel']>;
+                  members?: Collection<bigint, FilteredProxyCacheTypes<T, O>['member']>;
+                  roles?: Collection<bigint, FilteredProxyCacheTypes<T, O>['role']>;
+              }
+          >
+        : FilterProps<T[P], O['desiredProps'] extends Record<P, (keyof T[P])[]> ? O['desiredProps'][P][number] : keyof T[P], O['undesiredProps'] extends Record<P, (keyof T[P])[]> ? O['undesiredProps'][P][number] : never>;
 };
 
-export interface ProxyCacheProps<T extends ProxyCacheTypes, U extends ApplyLastInteractedTimeToAll<T> = ApplyLastInteractedTimeToAll<T>> {
+export interface ProxyCacheProps<T extends ProxyCacheTypes, O extends CreateProxyCacheOptions<T>> {
     cache: {
         options: CreateProxyCacheOptions<T>;
         channels: {
             guildIds: Collection<bigint, bigint>;
-            memory: Collection<bigint, U['channel']>;
-            get: (id: bigint) => Promise<U['channel'] | undefined>;
-            set: (value: U['channel']) => Promise<void>;
+            memory: Collection<bigint, FilteredProxyCacheTypes<T, O>['channel']>;
+            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, O>['channel'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, O>['channel']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         guilds: {
-            memory: Collection<bigint, U['guild']>;
-            get: (id: bigint) => Promise<U['guild'] | undefined>;
-            set: (value: U['guild']) => Promise<void>;
+            memory: Collection<bigint, FilteredProxyCacheTypes<T, O>['guild']>;
+            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, O>['guild'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, O>['guild']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         members: {
-            get: (id: bigint, guildId: bigint) => Promise<U['member'] | undefined>;
-            set: (value: U['member']) => Promise<void>;
+            get: (id: bigint, guildId: bigint) => Promise<FilteredProxyCacheTypes<T, O>['member'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, O>['member']) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         roles: {
             guildIds: Collection<bigint, bigint>;
-            get: (id: bigint) => Promise<U['role'] | undefined>;
-            set: (value: U['role']) => Promise<void>;
+            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, O>['role'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, O>['role']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         users: {
-            memory: Collection<bigint, U['user']>;
-            get: (id: bigint) => Promise<U['user'] | undefined>;
-            set: (value: U['user']) => Promise<void>;
+            memory: Collection<bigint, FilteredProxyCacheTypes<T, O>['user']>;
+            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, O>['user'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, O>['user']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
     };
 }
 
-export type BotWithProxyCache<T extends ProxyCacheTypes, B extends Bot = Bot> = B & ProxyCacheProps<T>;
+export type BotWithProxyCache<T extends ProxyCacheTypes, B extends Bot, O extends CreateProxyCacheOptions<T> = CreateProxyCacheOptions<T>> = B & ProxyCacheProps<T, O>;
 
-export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B extends Bot = Bot>(rawBot: B, options: CreateProxyCacheOptions<T>): BotWithProxyCache<T, B> => {
+export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B extends Bot = Bot, O extends CreateProxyCacheOptions<T> = CreateProxyCacheOptions<T>>(rawBot: B, options: O): BotWithProxyCache<T, B, O> => {
     const bot = rawBot as BotWithProxyCache<T, B>;
 
     // @ts-ignore
@@ -54,9 +65,9 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
     const pendingGuildsData = new Collection<
         bigint,
         {
-            channels?: Collection<bigint, LastInteractedTimeTrackedRecord<T['channel']>>;
-            members?: Collection<bigint, LastInteractedTimeTrackedRecord<T['member']>>;
-            roles?: Collection<bigint, LastInteractedTimeTrackedRecord<T['role']>>;
+            channels?: Collection<bigint, FilteredProxyCacheTypes<T>['channel']>;
+            members?: Collection<bigint, FilteredProxyCacheTypes<T>['member']>;
+            roles?: Collection<bigint, FilteredProxyCacheTypes<T>['role']>;
         }
     >();
 
@@ -278,8 +289,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                     const guildId = bot.cache.roles.guildIds.get(role.id);
                     if (guildId) {
                         const guild = bot.cache.guilds.memory.get(guildId);
-                        if (guild) guild.roles.set(role.id, role);
-                        else {
+                        if (guild) {
+                            if (!guild.roles) guild.roles = new Collection();
+
+                            guild.roles.set(role.id, role);
+                        } else {
                             const pendingGuild = pendingGuildsData.get(guildId);
                             if (!pendingGuild) pendingGuildsData.set(guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
 
@@ -339,8 +353,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                 if (options.cacheInMemory?.guild) {
                     if (member.guildId) {
                         const guild = bot.cache.guilds.memory.get(member.guildId);
-                        if (guild) guild.members.set(member.id, member);
-                        else {
+                        if (guild) {
+                            if (!guild.members) guild.members = new Collection();
+
+                            guild.members.set(member.id, member);
+                        } else {
                             const pendingGuild = pendingGuildsData.get(member.guildId);
                             if (!pendingGuild) pendingGuildsData.set(member.guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
 
@@ -422,8 +439,11 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
                     const guildId = bot.cache.channels.guildIds.get(channel.id);
                     if (guildId) {
                         const guild = bot.cache.guilds.memory.get(guildId);
-                        if (guild) guild.channels.set(channel.id, channel);
-                        else {
+                        if (guild) {
+                            if (!guild.channels) guild.channels = new Collection();
+
+                            guild.channels.set(channel.id, channel);
+                        } else {
                             const pendingGuild = pendingGuildsData.get(guildId);
                             if (!pendingGuild) pendingGuildsData.set(guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
 
@@ -449,11 +469,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD CUSTOMIZER
     bot.transformers.customizers.member = (_, _payload, old) => {
         // Filter to desired args
-        const args: LastInteractedTimeTrackedRecord<T['member']> = {
-            id: old.id,
-            guildId: old.guildId,
-            lastInteractedTime: Date.now(),
-        };
+        // @ts-ignore
+        const args: FilteredProxyCacheTypes<T>['member'] = {};
 
         const keys = Object.keys(old) as (keyof Member)[];
 
@@ -474,10 +491,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
     bot.transformers.customizers.user = (_, _payload, old) => {
         // Filter to desired args
-        const args: LastInteractedTimeTrackedRecord<T['user']> = {
-            id: old.id,
-            lastInteractedTime: Date.now(),
-        };
+        // @ts-ignore
+        const args: FilteredProxyCacheTypes<T>['user'] = {};
 
         const keys = Object.keys(old) as (keyof User)[];
 
@@ -498,13 +513,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
     bot.transformers.customizers.guild = (_, payload, old) => {
         // Filter to desired args
-        const args: LastInteractedTimeTrackedRecord<T['guild']> = {
-            id: old.id,
-            channels: new Collection(),
-            members: new Collection(),
-            roles: new Collection(),
-            lastInteractedTime: Date.now(),
-        };
+        // @ts-ignore
+        const args: FilteredProxyCacheTypes<T>['guild'] = {};
 
         const keys = Object.keys(old) as (keyof Guild)[];
 
@@ -522,24 +532,15 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
         if (pendingGuildData) {
             pendingGuildsData.delete(old.id);
 
-            if (pendingGuildData.channels?.size) {
-                const oldChannels = old.channels.array().map((channel) => [channel.id, { ...channel, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['channel']>]);
-
-                args.channels = new Collection([...oldChannels, ...pendingGuildData.channels]);
-            }
-
-            if (pendingGuildData.members?.size) {
-                const oldMembers = old.members.array().map((member) => [member.id, { ...member, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['member']>]);
-
-                args.members = new Collection([...oldMembers, ...pendingGuildData.members]);
-            }
-
-            if (pendingGuildData.roles?.size) {
-                const oldRoles = old.roles.array().map((role) => [role.id, { ...role, lastInteractedTime: Date.now() }] as [bigint, LastInteractedTimeTrackedRecord<T['role']>]);
-
-                args.roles = new Collection([...oldRoles, ...pendingGuildData.roles]);
-            }
+            if (pendingGuildData.channels?.size) args.channels = new Collection([...pendingGuildData.channels, ...(args.channels || [])]);
+            if (pendingGuildData.members?.size) args.members = new Collection([...pendingGuildData.members, ...(args.members || [])]);
+            if (pendingGuildData.roles?.size) args.roles = new Collection([...pendingGuildData.roles, ...(args.roles || [])]);
         }
+
+        // Update last interacted time for all channels, members and roles
+        if (args.channels) args.channels = new Collection(args.channels.array().map((channel) => [channel.id, { ...channel, lastInteractedTime: Date.now() }]));
+        if (args.members) args.members = new Collection(args.members.array().map((member) => [member.id, { ...member, lastInteractedTime: Date.now() }]));
+        if (args.roles) args.roles = new Collection(args.roles.array().map((role) => [role.id, { ...role, lastInteractedTime: Date.now() }]));
 
         // Set approximate member count as member count if payload is from API
         if (payload.approximate_member_count && options.desiredProps?.guild?.includes('memberCount')) args.memberCount = payload.approximate_member_count;
@@ -561,11 +562,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
     bot.transformers.customizers.channel = (_, _payload, old) => {
         // Filter to desired args
-        const args: LastInteractedTimeTrackedRecord<T['channel']> = {
-            id: old.id,
-            guildId: old.guildId,
-            lastInteractedTime: Date.now(),
-        };
+        // @ts-ignore
+        const args: FilteredProxyCacheTypes<T>['channel'] = {};
 
         const keys = Object.keys(old) as (keyof Channel)[];
 
@@ -586,11 +584,8 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
 
     bot.transformers.customizers.role = (_, _payload, old) => {
         // Filter to desired args
-        const args: LastInteractedTimeTrackedRecord<T['role']> = {
-            id: old.id,
-            guildId: old.guildId,
-            lastInteractedTime: Date.now(),
-        };
+        // @ts-ignore
+        const args: FilteredProxyCacheTypes<T>['role'] = {};
 
         const keys = Object.keys(old) as (keyof Role)[];
 
@@ -655,25 +650,22 @@ export const createProxyCache = <T extends ProxyCacheTypes = ProxyCacheTypes, B 
     return bot;
 };
 
-type PartialExceptId<T> = Partial<T> & { id: bigint };
-type PartialExceptIdAndGuildId<T> = PartialExceptId<T> & { guildId: bigint };
-
 export type ProxyCacheTypes = {
-    channel: PartialExceptId<Channel>;
-    guild: Omit<PartialExceptId<Guild>, 'channels' | 'members' | 'roles'> & {
-        channels: Collection<bigint, LastInteractedTimeTrackedRecord<PartialExceptId<Channel>>>;
-        members: Collection<bigint, LastInteractedTimeTrackedRecord<PartialExceptIdAndGuildId<Member>>>;
-        roles: Collection<bigint, LastInteractedTimeTrackedRecord<PartialExceptIdAndGuildId<Role>>>;
+    channel: Channel;
+    guild: Omit<Guild, 'channels' | 'members' | 'roles'> & {
+        channels?: Collection<bigint, LastInteractedTimeTrackedRecord<Channel>>;
+        members?: Collection<bigint, LastInteractedTimeTrackedRecord<Member>>;
+        roles?: Collection<bigint, LastInteractedTimeTrackedRecord<Role>>;
     };
-    member: PartialExceptIdAndGuildId<Member>;
-    role: PartialExceptIdAndGuildId<Role>;
-    user: PartialExceptId<User>;
+    member: Member;
+    role: Role;
+    user: User;
 };
 
 // Note: Adding ProxyCacheTypes[K] because TS doesn't provide autocomplete on extends keyof generic, this trick will provide autocomplete
 type DesiredPropsArray<T extends ProxyCacheTypes, K extends keyof ProxyCacheTypes> = Array<keyof T[K] | keyof ProxyCacheTypes[K]>;
 
-export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends ApplyLastInteractedTimeToAll<T> = ApplyLastInteractedTimeToAll<T>> {
+export interface CreateProxyCacheOptions<T extends ProxyCacheTypes> {
     /** Configure the exact properties you wish to have in each object. */
     desiredProps?: {
         /** The properties you want to keep in a channel object. */
@@ -739,11 +731,11 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends Ap
         default: boolean;
     };
     /** Handler to get an object from a specific table. */
-    getItem?: <K extends keyof U>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<U[K]>;
+    getItem?: <K extends keyof T>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<FilteredProxyCacheTypes<T>[K]>;
     /** Handler to set an object in a specific table. */
-    setItem?: <K extends keyof U>(table: K, item: U[K]) => Promise<U[K]>;
+    setItem?: <K extends keyof T>(table: K, item: FilteredProxyCacheTypes<T>[K]) => Promise<FilteredProxyCacheTypes<T>[K]>;
     /** Handler to delete an object in a specific table. */
-    removeItem?: <K extends keyof U>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<unknown>;
+    removeItem?: <K extends keyof T>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<unknown>;
     /**
      * Options for handling the removal of objects that may trigger bulk modifications or deletions of associated entities.
      *
@@ -769,15 +761,15 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends Ap
     /** Configure the handlers that should be ran whenever something is about to be cached to determine whether it should or should not be cached. */
     shouldCache?: {
         /** Handler to check whether or not to cache this channel. */
-        channel?: (channel: T['channel'] | Channel) => Promise<boolean>;
+        channel?: (channel: FilteredProxyCacheTypes<T>['channel']) => Promise<boolean>;
         /** Handler to check whether or not to cache this guild. */
-        guild?: (guild: T['guild'] | Guild) => Promise<boolean>;
+        guild?: (guild: FilteredProxyCacheTypes<T>['guild']) => Promise<boolean>;
         /** Handler to check whether or not to cache this member. */
-        member?: (member: T['member'] | Member) => Promise<boolean>;
+        member?: (member: FilteredProxyCacheTypes<T>['member']) => Promise<boolean>;
         /** Handler to check whether or not to cache this role. */
-        role?: (role: T['role'] | Role) => Promise<boolean>;
+        role?: (role: FilteredProxyCacheTypes<T>['role']) => Promise<boolean>;
         /** Handler to check whether or not to cache this user. */
-        user?: (user: T['user'] | User) => Promise<boolean>;
+        user?: (user: FilteredProxyCacheTypes<T>['user']) => Promise<boolean>;
     };
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
@@ -790,15 +782,15 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes, U extends Ap
          */
         filter: {
             /** Filter to decide whether or not to remove a channel from the cache. */
-            channel?: (channel: U['channel']) => boolean;
+            channel?: (channel: FilteredProxyCacheTypes<T>['channel']) => boolean;
             /** Filter to decide whether or not to remove a guild from the cache. */
-            guild?: (guild: U['guild']) => boolean;
+            guild?: (guild: FilteredProxyCacheTypes<T>['guild']) => boolean;
             /** Filter to decide whether or not to remove a member from the cache. */
-            member?: (member: U['member']) => boolean;
+            member?: (member: FilteredProxyCacheTypes<T>['member']) => boolean;
             /** Filter to decide whether or not to remove a role from the cache. */
-            role?: (role: U['role']) => boolean;
+            role?: (role: FilteredProxyCacheTypes<T>['role']) => boolean;
             /** Filter to decide whether or not to remove a user from the cache. */
-            user?: (user: U['user']) => boolean;
+            user?: (user: FilteredProxyCacheTypes<T>['user']) => boolean;
         };
     };
 }
