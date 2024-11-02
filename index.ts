@@ -51,6 +51,13 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes, O extends CreateProx
             set: (value: FilteredProxyCacheTypes<T, O>['user']) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
+        $inferredTypes: {
+            channel: FilteredProxyCacheTypes<T, O>['channel'];
+            guild: FilteredProxyCacheTypes<T, O>['guild'];
+            member: FilteredProxyCacheTypes<T, O>['member'];
+            role: FilteredProxyCacheTypes<T, O>['role'];
+            user: FilteredProxyCacheTypes<T, O>['user'];
+        };
     };
 }
 
