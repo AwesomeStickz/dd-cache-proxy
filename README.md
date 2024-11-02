@@ -66,11 +66,11 @@ await bot.cache.guilds.get(guildId);
 
 Each cache will be in their own property under `bot.cache` and each of them have the following methods: `delete`, `get`, `set`, usage of these should be self explanatory from intellisense. If you cache in memory and need access to the collection directly, you can use `bot.cache.guilds.memory`, this will return a collection.
 
-## Types:
+## Types Support:
 
-Types of cached objects changes based on the provided `desiredProperties` and `undesiredProperties`, so only the properties stored will be shown in your intellisense to make it easier for you to use the package.
+The types of cached objects change based on the provided `desiredProperties` and `undesiredProperties`, so only the stored properties will appear in your intelliSense, making the package easier to use.
 
-These types are also exposed under `bot.cache.$inferredTypes`, and if you wish, you can export a custom type by using these types, like:
+These types are also exposed under `bot.cache.$inferredTypes`, and if you wish, you can export them as with a custom name for ease of use, like:
 
 ```ts
 export type CachedGuild = typeof bot.cache.$inferredTypes.guild;
