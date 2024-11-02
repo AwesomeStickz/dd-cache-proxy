@@ -21,28 +21,28 @@ const getProxyCacheBot = (bot: Bot) =>
         // Define what properties of individual cache you wish to cache. Caches no props by default. Or you can use the `undesiredProps` prop to reverse the behavior of `desiredProps`.
         desiredProps: {
             // Example props that are cached in channels and other cache. Accepts an array of props of the cache. All props are optional.
-            guilds: ['channels', 'icon', 'id', 'name', 'roles'],
-            users: ['avatar', 'id', 'username'],
+            guild: ['channels', 'icon', 'id', 'name', 'roles'],
+            user: ['avatar', 'id', 'username'],
         },
         // Define what to cache in memory. All props are optional except `default`. By default, all props inside `cacheInMemory` are set to `true`.
         cacheInMemory: {
             // Whether or not to cache guilds.
-            guilds: true,
-            channels: true,
+            guild: true,
+            channel: true,
             // Default value for the properties that are not provided inside `cacheInMemory`.
             default: false,
         },
         // Define what to cache outside memory. All props are optional except `default`. By default, all props inside `cacheOutsideMemory` are set to `false`.
         cacheOutsideMemory: {
             // Whether or not to cache channels.
-            channels: false,
-            roles: false,
+            channel: false,
+            role: false,
             // Default value for the properties that are not provided inside `cacheOutsideMemory`.
             default: true,
         },
         // Function to get an item from outside cache. `getItem`, `setItem`, `removeItem` must be provided if you cache outside memory, can be omitted if you don't store outside memory.
         setItem: (table, item) => {
-            if (table === 'channels') {
+            if (table === 'channel') {
                 // Custom code to store data into your cache outside memory, say redis or a database or whichever you use.
             }
         },
@@ -65,6 +65,18 @@ await bot.cache.guilds.get(guildId);
 ```
 
 Each cache will be in their own property under `bot.cache` and each of them have the following methods: `delete`, `get`, `set`, usage of these should be self explanatory from intellisense. If you cache in memory and need access to the collection directly, you can use `bot.cache.guilds.memory`, this will return a collection.
+
+## Types:
+
+Types of cached objects changes based on the provided `desiredProperties` and `undesiredProperties`, so only the properties stored will be shown in your intellisense to make it easier for you to use the package.
+
+These types are also exposed under `bot.cache.$inferredTypes`, and if you wish, you can export a custom type by using these types, like:
+
+```ts
+export type CachedGuild = typeof bot.cache.$inferredTypes.guild;
+```
+
+Now you can import `CachedGuild` in your code and use it.
 
 # **Important Things To Note:**
 
