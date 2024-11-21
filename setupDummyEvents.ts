@@ -1,10 +1,12 @@
-import { Bot, EventHandlers } from '@discordeno/bot';
+import { Bot, DesiredPropertiesBehavior, EventHandlers, TransformersDesiredProperties } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
 const ignore = () => {};
 
-export const setupDummyEvents = <T extends ProxyCacheTypes, B extends Bot>(bot: BotWithProxyCache<T, B>) => {
-    const eventsRequired = new Set<keyof EventHandlers>();
+type EventHandlersKeys = keyof EventHandlers<TransformersDesiredProperties, DesiredPropertiesBehavior>;
+
+export const setupDummyEvents = <T extends ProxyCacheTypes<Props, Behavior>, Props extends TransformersDesiredProperties, Behavior extends DesiredPropertiesBehavior, B extends Bot<Props, Behavior>>(bot: BotWithProxyCache<T, Props, Behavior, B>) => {
+    const eventsRequired = new Set<EventHandlersKeys>();
     const { cacheInMemory, cacheOutsideMemory } = bot.cache.options || {};
 
     // Guild
@@ -40,14 +42,14 @@ export const setupDummyEvents = <T extends ProxyCacheTypes, B extends Bot>(bot: 
 
 // Handlers: GUILD_CREATE, GUILD_UPDATE
 // Transformers: None
-const setupDummyGuildEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyGuildEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('guildCreate');
     eventsRequired.add('guildUpdate');
 };
 
 // Handlers: CHANNEL_CREATE, CHANNEL_DELETE, CHANNEL_UPDATE, THREAD_CREATE, THREAD_DELETE, THREAD_UPDATE, THREAD_LIST_SYNC
 // Transformers: Guild, Interaction, Message
-const setupDummyChannelEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyChannelEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('channelCreate');
     eventsRequired.add('channelDelete');
     eventsRequired.add('channelUpdate');
@@ -63,7 +65,7 @@ const setupDummyChannelEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: GUILD_ROLE_CREATE, GUILD_ROLE_UPDATE
 // Transformers: Guild, Interaction
-const setupDummyRoleEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyRoleEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('roleCreate');
     eventsRequired.add('roleUpdate');
 
@@ -73,7 +75,7 @@ const setupDummyRoleEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: GUILD_MEMBER_ADD, GUILD_MEMBER_UPDATE, MESSAGE_REACTION_ADD, TYPING_START
 // Transformers: Guild, Interaction, Message, Stage Invite Instance (Invite)
-const setupDummyMemberEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyMemberEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('guildMemberAdd');
     eventsRequired.add('guildMemberUpdate');
     eventsRequired.add('reactionAdd');
@@ -87,7 +89,7 @@ const setupDummyMemberEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: GUILD_BAN_ADD, GUILD_BAN_REMOVE, GUILD_MEMBER_ADD, GUILD_MEMBER_REMOVE, GUILD_MEMBER_UPDATE, MESSAGE_REACTION_ADD, READY, USER_UPDATE
 // Transformers: Application (Invite), Channel, Emoji, Integration, Interaction, Invite, Member, Message, Presence, Scheduled Event, Sticker    Pack (REST Only), Team (Application (Invite)), Template (REST Only), Webhook (REST Only)
-const setupDummyUserEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyUserEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('guildBanAdd');
     eventsRequired.add('guildBanRemove');
     eventsRequired.add('guildMemberAdd');
@@ -110,7 +112,7 @@ const setupDummyUserEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: GUILD_EMOJIS_UPDATE, MESSAGE_REACTION_ADD, MESSAGE_REACTION_REMOVE_EMOJI, MESSAGE_REACTION_REMOVE
 // Transformers: Guild, Message, Onboarding (REST Only), Poll (Message)
-const setupDummyEmojiEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyEmojiEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('guildEmojisUpdate');
     eventsRequired.add('reactionAdd');
     eventsRequired.add('reactionRemoveEmoji');
@@ -122,26 +124,26 @@ const setupDummyEmojiEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: INTEGRATION_CREATE, INTEGRATION_UPDATE
 // Transformers: None
-const setupDummyIntegrationEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyIntegrationEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('integrationCreate');
     eventsRequired.add('integrationUpdate');
 };
 
 // Handlers: INTERACTION_CREATE
 // Transformers: None
-const setupDummyInteractionEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyInteractionEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('interactionCreate');
 };
 
 // Handlers: INVITE_CREATE
 // Transformers: None
-const setupDummyInviteEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyInviteEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('inviteCreate');
 };
 
 // Handlers: MESSAGE_CREATE, MESSAGE_UPDATE
 // Transformers: Interaction, Message (Self)
-const setupDummyMessageEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyMessageEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('messageCreate');
     eventsRequired.add('messageUpdate');
 
@@ -150,7 +152,7 @@ const setupDummyMessageEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: PRESENCE_UPDATE
 // Transformers: Guild
-const setupDummyPresenceEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyPresenceEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('presenceUpdate');
 
     setupDummyGuildEvents(eventsRequired);
@@ -158,7 +160,7 @@ const setupDummyPresenceEvents = (eventsRequired: Set<keyof EventHandlers>) => {
 
 // Handlers: GUILD_SCHEDULED_EVENT_CREATE, GUILD_SCHEDULED_EVENT_DELETE, GUILD_SCHEDULED_EVENT_UPDATE
 // Transformers: Invite
-const setupDummyScheduledEventEvents = (eventsRequired: Set<keyof EventHandlers>) => {
+const setupDummyScheduledEventEvents = (eventsRequired: Set<EventHandlersKeys>) => {
     eventsRequired.add('scheduledEventCreate');
     eventsRequired.add('scheduledEventDelete');
     eventsRequired.add('scheduledEventUpdate');

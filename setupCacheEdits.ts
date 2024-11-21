@@ -1,7 +1,7 @@
-import { Bot, DiscordGuildMemberAdd, DiscordGuildMemberRemove } from '@discordeno/bot';
+import { Bot, DiscordGuildMemberAdd, DiscordGuildMemberRemove, Guild, type DesiredPropertiesBehavior, type TransformersDesiredProperties } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
-export const setupCacheEdits = <T extends ProxyCacheTypes, B extends Bot>(bot: BotWithProxyCache<T, B>) => {
+export const setupCacheEdits = <T extends ProxyCacheTypes<Props, Behavior>, Props extends TransformersDesiredProperties, Behavior extends DesiredPropertiesBehavior, B extends Bot<Props, Behavior>>(bot: BotWithProxyCache<T, Props, Behavior, B>) => {
     const { GUILD_MEMBER_ADD, GUILD_MEMBER_REMOVE } = bot.handlers;
 
     bot.handlers.GUILD_MEMBER_ADD = async (_, data, shardId) => {
@@ -11,7 +11,7 @@ export const setupCacheEdits = <T extends ProxyCacheTypes, B extends Bot>(bot: B
         const guild = bot.cache.guilds.memory.get(guildID);
 
         if (guild) {
-            if (guild.memberCount) guild.memberCount++;
+            if ('memberCount' in guild) (guild.memberCount as Guild['memberCount'])++;
 
             await bot.cache.guilds.set(guild);
         }
@@ -26,7 +26,7 @@ export const setupCacheEdits = <T extends ProxyCacheTypes, B extends Bot>(bot: B
         const guild = bot.cache.guilds.memory.get(guildID);
 
         if (guild) {
-            if (guild.memberCount) guild.memberCount--;
+            if ('memberCount' in guild) (guild.memberCount as Guild['memberCount'])--;
 
             await bot.cache.guilds.set(guild);
         }
