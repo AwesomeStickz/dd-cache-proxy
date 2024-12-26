@@ -1,4 +1,4 @@
-import { Bot, Channel, Collection, Guild, Member, Role, User, type DesiredPropertiesBehavior, type SetupDesiredProps, type TransformersDesiredProperties } from '@discordeno/bot';
+import { baseChannel, baseGuild, baseMember, baseRole, baseUser, Bot, Channel, Collection, Guild, Member, Role, User, type DesiredPropertiesBehavior, type SetupDesiredProps, type TransformersDesiredProperties } from '@discordeno/bot';
 import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
 import { setupDummyEvents } from './setupDummyEvents.js';
@@ -488,7 +488,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
         // Filter to desired args
         // @ts-ignore
-        const args: FilteredProxyCacheTypes<T, Props, Behavior>['member'] = {};
+        const args: FilteredProxyCacheTypes<T, Props, Behavior>['member'] = Object.create(baseMember);
 
         const keys = Object.keys(old) as (keyof typeof old)[];
 
@@ -512,7 +512,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
         // Filter to desired args
         // @ts-ignore
-        const args: FilteredProxyCacheTypes<T, Props, Behavior>['user'] = {};
+        const args: FilteredProxyCacheTypes<T, Props, Behavior>['user'] = Object.create(baseUser);
 
         const keys = Object.keys(old) as (keyof typeof old)[];
 
@@ -536,7 +536,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
         // Filter to desired args
         // @ts-ignore
-        const args: FilteredProxyCacheTypes<T, Props, Behavior>['guild'] = {};
+        const args: FilteredProxyCacheTypes<T, Props, Behavior>['guild'] = Object.create(baseGuild);
 
         const keys = Object.keys(old) as (keyof typeof old)[];
 
@@ -560,9 +560,33 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         }
 
         // Update last interacted time for all channels, members and roles
-        if (args.channels) args.channels = new Collection(args.channels.array().map((channel) => [(channel as unknown as Channel).id, { ...channel, lastInteractedTime: Date.now() }]));
-        if (args.members) args.members = new Collection(args.members.array().map((member) => [(member as unknown as Member).id, { ...member, lastInteractedTime: Date.now() }]));
-        if (args.roles) args.roles = new Collection(args.roles.array().map((role) => [(role as unknown as Role).id, { ...role, lastInteractedTime: Date.now() }]));
+        // NOTE: Do not recreate the objects to preserve the getters
+        if (args.channels)
+            args.channels = new Collection(
+                args.channels.array().map((channel) => {
+                    channel.lastInteractedTime = Date.now();
+
+                    return [(channel as unknown as Channel).id, channel];
+                })
+            );
+
+        if (args.members)
+            args.members = new Collection(
+                args.members.array().map((member) => {
+                    member.lastInteractedTime = Date.now();
+
+                    return [(member as unknown as Member).id, member];
+                })
+            );
+
+        if (args.roles)
+            args.roles = new Collection(
+                args.roles.array().map((role) => {
+                    role.lastInteractedTime = Date.now();
+
+                    return [(role as unknown as Role).id, role];
+                })
+            );
 
         // Set approximate member count as member count if payload is from API
         if (payload.approximate_member_count && (options.desiredProps?.guild as (keyof Guild)[])?.includes('memberCount')) (args as unknown as Guild).memberCount = payload.approximate_member_count;
@@ -587,7 +611,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
         // Filter to desired args
         // @ts-ignore
-        const args: FilteredProxyCacheTypes<T, Props, Behavior>['channel'] = {};
+        const args: FilteredProxyCacheTypes<T, Props, Behavior>['channel'] = Object.create(baseChannel);
 
         const keys = Object.keys(old) as (keyof typeof old)[];
 
@@ -611,7 +635,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
         // Filter to desired args
         // @ts-ignore
-        const args: FilteredProxyCacheTypes<T, Props, Behavior>['role'] = {};
+        const args: FilteredProxyCacheTypes<T, Props, Behavior>['role'] = Object.create(baseRole);
 
         const keys = Object.keys(old) as (keyof typeof old)[];
 
