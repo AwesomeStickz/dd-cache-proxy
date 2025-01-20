@@ -504,7 +504,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // Add to memory
         bot.cache.members.set(args);
 
-        return args;
+        // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
+        return old;
     };
 
     bot.transformers.customizers.user = (_, _payload, old) => {
@@ -528,7 +529,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // Add to memory
         bot.cache.users.set(args);
 
-        return args;
+        // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
+        return old;
     };
 
     bot.transformers.customizers.guild = (_, payload, old) => {
@@ -603,7 +605,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
         }
 
-        return args;
+        // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
+        return old;
     };
 
     bot.transformers.customizers.channel = (_, _payload, old) => {
@@ -627,7 +630,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // Add to memory
         bot.cache.channels.set(args);
 
-        return args;
+        // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
+        return old;
     };
 
     bot.transformers.customizers.role = (_, _payload, old) => {
@@ -651,7 +655,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // Add to memory
         bot.cache.roles.set(args);
 
-        return args;
+        // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
+        return old;
     };
 
     setupCacheEdits(bot);
