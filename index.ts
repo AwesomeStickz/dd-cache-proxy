@@ -31,7 +31,7 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
         guilds: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild']>;
             get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild']) => Promise<void>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild'], replaceCurrentValue?: boolean) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         members: {
@@ -189,9 +189,25 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (guild) => {
+        set: async (guild, replaceCurrentValue = false) => {
             // Should this be cached or not?
             if (options.shouldCache?.guild && !(await options.shouldCache.guild(guild))) return;
+
+            // If we are not replacing the current value, we merge the new data with the old data
+            if (!replaceCurrentValue) {
+                const oldGuild = await bot.cache.guilds.get((guild as unknown as Guild).id);
+
+                // If we have the old guild, we merge the new data with the old data
+                if (oldGuild) {
+                    const keys = Object.keys(guild) as (keyof typeof guild)[];
+
+                    for (const key of keys) {
+                        (oldGuild as any)[key] = guild[key];
+                    }
+
+                    guild = oldGuild;
+                }
+            }
 
             guild.lastInteractedTime = Date.now();
 
