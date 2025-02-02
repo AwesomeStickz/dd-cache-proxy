@@ -1,8 +1,8 @@
-import { Bot, DiscordChannel, DiscordGuildBanAddRemove, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild, type DesiredPropertiesBehavior, type TransformersDesiredProperties } from '@discordeno/bot';
+import { Bot, DiscordChannel, DiscordGuildMemberRemove, DiscordGuildRoleDelete, DiscordUnavailableGuild, type DesiredPropertiesBehavior, type TransformersDesiredProperties } from '@discordeno/bot';
 import { BotWithProxyCache, ProxyCacheTypes } from './index.js';
 
 export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, Props extends TransformersDesiredProperties, Behavior extends DesiredPropertiesBehavior, B extends Bot<Props, Behavior>>(bot: BotWithProxyCache<T, Props, Behavior, B>) => {
-    const { CHANNEL_DELETE, GUILD_BAN_ADD, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE, THREAD_DELETE } = bot.handlers;
+    const { CHANNEL_DELETE, GUILD_DELETE, GUILD_MEMBER_REMOVE, GUILD_ROLE_DELETE, THREAD_DELETE } = bot.handlers;
 
     bot.handlers.CHANNEL_DELETE = (_, data, shardId) => {
         const payload = data.d as DiscordChannel;
@@ -28,13 +28,6 @@ export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, P
         const payload = data.d as DiscordGuildMemberRemove;
 
         GUILD_MEMBER_REMOVE(bot, data, shardId);
-
-        bot.cache.members.delete(bot.transformers.snowflake(payload.user.id), bot.transformers.snowflake(payload.guild_id));
-    };
-
-    bot.handlers.GUILD_BAN_ADD = (_, data, shardId) => {
-        const payload = data.d as DiscordGuildBanAddRemove;
-        GUILD_BAN_ADD(bot, data, shardId);
 
         bot.cache.members.delete(bot.transformers.snowflake(payload.user.id), bot.transformers.snowflake(payload.guild_id));
     };
