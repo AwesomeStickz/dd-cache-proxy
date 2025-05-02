@@ -112,6 +112,12 @@ This provides the following props: (should be self explanatory with intellisense
 -   `options.bulk.removeRole`
 -   `options.bulk.replaceInternalBulkRemover` - To set props under this prop to tell the cache proxy whether or not to run internal bulk removers.
 
+#### Note: If you cache outside memory, you must handle bulk removals yourself, otherwise they will **NOT** be deleted. The following are the bulk remover functions and the actions they should perform:
+
+-   `removeChannel` - This should remove the channel and all the thread channels that are in this channel.
+-   `removeGuild` - This should remove the guild, all the channels, members, roles that are in this guild.
+-   `removeRole` - This should remove the role and remove it from the role list of every member who has it.
+
 ### `options.sweeper`:
 
 This option allows you to specify options for sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper.
