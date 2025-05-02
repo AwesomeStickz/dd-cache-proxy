@@ -112,7 +112,11 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // Remove all threads that are in this channel
             bot.cache.channels.memory.forEach((thread) => {
-                if ((thread as unknown as Channel).parentId === id) bot.cache.channels.delete((thread as unknown as Channel).id);
+                if ((thread as unknown as Channel).parentId === id) {
+                    bot.cache.channels.memory.delete((thread as unknown as Channel).id);
+                    bot.cache.channels.guildIds.delete((thread as unknown as Channel).id);
+                    bot.cache.channels.guildIds.delete((thread as unknown as Channel).id);
+                }
             });
         },
         removeGuild: async (id: bigint) => {
@@ -123,6 +127,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             bot.cache.channels.memory.forEach((channel) => {
                 if ((channel as unknown as Channel).guildId === id) {
                     bot.cache.channels.memory.delete((channel as unknown as Channel).id);
+                    bot.cache.channels.guildIds.delete((channel as unknown as Channel).id);
                     bot.cache.channels.guildIds.delete((channel as unknown as Channel).id);
                 }
             });
