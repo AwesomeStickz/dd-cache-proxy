@@ -107,9 +107,6 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     const internalBulkRemover = {
         removeChannel: async (id: bigint) => {
-            // Remove channel
-            bot.cache.channels.delete(id);
-
             // Remove all threads that are in this channel
             bot.cache.channels.memory.forEach((thread) => {
                 if ((thread as unknown as Channel).parentId === id) {
@@ -120,10 +117,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             });
         },
         removeGuild: async (id: bigint) => {
-            // Remove from memory
-            bot.cache.guilds.memory.delete(id);
-
-            // Remove any associated channels
+            // Remove all channels that are in this guild
             bot.cache.channels.memory.forEach((channel) => {
                 if ((channel as unknown as Channel).guildId === id) {
                     bot.cache.channels.memory.delete((channel as unknown as Channel).id);
