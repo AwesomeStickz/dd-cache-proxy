@@ -240,6 +240,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             bot.cache.guilds.memory.delete(guildId);
 
             // Remove from non-memory cache
+            if (options.removeItem) await options.removeItem('guild', guildId);
+
+            // Handle bulk removal of channels
             await options.bulk?.removeGuild?.(guildId);
         },
     };
