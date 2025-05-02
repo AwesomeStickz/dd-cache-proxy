@@ -107,6 +107,7 @@ For example, if you store guild channels individually in a database separate fro
 
 This provides the following props: (should be self explanatory with intellisense)
 
+-   `options.bulk.removeChannel`
 -   `options.bulk.removeGuild`
 -   `options.bulk.removeRole`
 -   `options.bulk.replaceInternalBulkRemover` - To set props under this prop to tell the cache proxy whether or not to run internal bulk removers.

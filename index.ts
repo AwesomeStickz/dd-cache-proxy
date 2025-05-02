@@ -106,6 +106,15 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     const internalBulkRemover = {
+        removeChannel: async (id: bigint) => {
+            // Remove channel
+            bot.cache.channels.delete(id);
+
+            // Remove all threads that are in this channel
+            bot.cache.channels.memory.forEach((thread) => {
+                if ((thread as unknown as Channel).parentId === id) bot.cache.channels.delete((thread as unknown as Channel).id);
+            });
+        },
         removeGuild: async (id: bigint) => {
             // Remove from memory
             bot.cache.guilds.memory.delete(id);
@@ -140,8 +149,18 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     if (!bot.cache.options.bulk) bot.cache.options.bulk = {};
 
     // Get bulk removers passed by user, data about which internal removers to replace
-    const { removeGuild, removeRole } = bot.cache.options.bulk;
+    const { removeChannel, removeGuild, removeRole } = bot.cache.options.bulk;
     const { replaceInternalBulkRemover } = bot.cache.options.bulk;
+
+    // If user passed bulk.removeChannel else if replaceInternalBulkRemover.channel is not set to true
+    if (removeChannel || !replaceInternalBulkRemover?.channel) {
+        bot.cache.options.bulk.removeChannel = async (id) => {
+            // If replaceInternalBulkRemover.channel is not set to true, run internal channel bulk remover
+            if (!replaceInternalBulkRemover?.channel) await internalBulkRemover.removeChannel(id);
+            // If user passed bulk.removeChannel, run passed bulk remover
+            await removeChannel?.(id);
+        };
+    }
 
     // If user passed bulk.removeGuild else if replaceInternalBulkRemover.guild is not set to true
     if (removeGuild || !replaceInternalBulkRemover?.guild) {
@@ -559,6 +578,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('channel', channelId);
+
+            // Handle bulk removal of threads within the channel
+            await options.bulk?.removeChannel?.(channelId);
         },
     };
 
@@ -877,6 +899,8 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
      * This allows for performance optimization by consolidating multiple operations into a single action, rather than executing hundreds of queries.
      */
     bulk?: {
+        /** Handler for the removal of channels and their associated entities (e.g., threads within the channel). */
+        removeChannel?: (id: bigint) => Promise<unknown>;
         /** Handler for the removal of guilds and their associated entities (e.g., channels, members and roles). */
         removeGuild?: (id: bigint) => Promise<unknown>;
         /** Handler for the removal of roles and their associated entities (e.g., members having this role). */
@@ -887,6 +911,8 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
          * By default, the proxy will handle the bulk modifications and deletions of associated entities from in-memory cache. You can override this behavior by setting this option to `true`.
          */
         replaceInternalBulkRemover?: {
+            /** Whether or not to replace the internal channel remover. */
+            channel?: boolean;
             /** Whether or not to replace the internal guild remover. */
             guild?: boolean;
             /** Whether or not to replace the internal role remover. */
