@@ -391,6 +391,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('role', roleId);
+
+            // Handle bulk removal of member roles
+            await options.bulk?.removeRole?.(roleId);
         },
     };
 
