@@ -25,7 +25,7 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
             guildIds: Collection<bigint, bigint>;
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel']>;
             get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel']) => Promise<void>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'], replaceCurrentValue?: boolean) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         guilds: {
@@ -36,19 +36,19 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
         };
         members: {
             get: (id: bigint, guildId: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member']) => Promise<void>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member'], replaceCurrentValue?: boolean) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         roles: {
             guildIds: Collection<bigint, bigint>;
             get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role']) => Promise<void>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'], replaceCurrentValue?: boolean) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         users: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user']>;
             get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user']) => Promise<void>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user'], replaceCurrentValue?: boolean) => Promise<void>;
             delete: (id: bigint) => Promise<void>;
         };
         $inferredTypes: {
@@ -193,7 +193,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // Should this be cached or not?
             if (options.shouldCache?.guild && !(await options.shouldCache.guild(guild))) return;
 
-            // If we are not replacing the current value, we merge the new data with the old data
+            // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
                 const oldGuild = await bot.cache.guilds.get((guild as unknown as Guild).id);
 
@@ -251,8 +251,24 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (user) => {
+        set: async (user, replaceCurrentValue = false) => {
             if (options.shouldCache?.user && !(await options.shouldCache.user(user))) return;
+
+            // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
+            if (!replaceCurrentValue) {
+                const oldUser = await bot.cache.users.get((user as unknown as User).id);
+
+                // If we have the old user, we merge the new data with the old data
+                if (oldUser) {
+                    const keys = Object.keys(user) as (keyof typeof user)[];
+
+                    for (const key of keys) {
+                        (oldUser as any)[key] = user[key];
+                    }
+
+                    user = oldUser;
+                }
+            }
 
             user.lastInteractedTime = Date.now();
 
@@ -302,12 +318,28 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (internalRole) => {
+        set: async (internalRole, replaceCurrentValue = false) => {
             if (options.shouldCache?.role && !(await options.shouldCache.role(internalRole))) return;
 
-            internalRole.lastInteractedTime = Date.now();
-
             const role = internalRole as unknown as Role;
+
+            // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
+            if (!replaceCurrentValue) {
+                const oldRole = await bot.cache.roles.get(role.id);
+
+                // If we have the old role, we merge the new data with the old data
+                if (oldRole) {
+                    const keys = Object.keys(role) as (keyof typeof role)[];
+
+                    for (const key of keys) {
+                        (oldRole as any)[key] = role[key];
+                    }
+
+                    internalRole = oldRole;
+                }
+            }
+
+            internalRole.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.role) {
@@ -371,12 +403,28 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (internalMember) => {
+        set: async (internalMember, replaceCurrentValue = false) => {
             if (options.shouldCache?.member && !(await options.shouldCache.member(internalMember))) return;
 
-            internalMember.lastInteractedTime = Date.now();
-
             const member = internalMember as unknown as Member;
+
+            // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
+            if (!replaceCurrentValue) {
+                const oldRole = await bot.cache.members.get(member.id, member.guildId);
+
+                // If we have the old member, we merge the new data with the old data
+                if (oldRole) {
+                    const keys = Object.keys(member) as (keyof typeof member)[];
+
+                    for (const key of keys) {
+                        (oldRole as any)[key] = member[key];
+                    }
+
+                    internalMember = oldRole;
+                }
+            }
+
+            internalMember.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.member) {
@@ -456,12 +504,28 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (internalChannel) => {
+        set: async (internalChannel, replaceCurrentValue = false) => {
             if (options.shouldCache?.channel && !(await options.shouldCache.channel(internalChannel))) return;
 
-            internalChannel.lastInteractedTime = Date.now();
-
             const channel = internalChannel as unknown as Channel;
+
+            // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
+            if (!replaceCurrentValue) {
+                const oldChannel = await bot.cache.channels.get(channel.id);
+
+                // If we have the old channel, we merge the new data with the old data
+                if (oldChannel) {
+                    const keys = Object.keys(channel) as (keyof typeof channel)[];
+
+                    for (const key of keys) {
+                        (oldChannel as any)[key] = channel[key];
+                    }
+
+                    internalChannel = oldChannel;
+                }
+            }
+
+            internalChannel.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.channel) {
