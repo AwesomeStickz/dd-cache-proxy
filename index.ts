@@ -592,61 +592,61 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD CUSTOMIZER
-    bot.transformers.customizers.member = (_, _payload, old) => {
+    bot.transformers.customizers.member = (_bot, _payload, member) => {
         // If member should be cached, but id is missing, we can't cache it
-        if (!('id' in old) && (options.cacheInMemory?.member || options.cacheOutsideMemory?.member)) return console.warn(`[CACHE] Can't cache member since id is missing.`);
+        if (!('id' in member) && (options.cacheInMemory?.member || options.cacheOutsideMemory?.member)) return console.warn(`[CACHE] Can't cache member since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
         const args: FilteredProxyCacheTypes<T, Props, Behavior>['member'] = Object.create(baseMember);
 
-        const keys = Object.keys(old) as (keyof typeof old)[];
+        const keys = Object.keys(member) as (keyof typeof member)[];
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.member?.includes(key)) (args as any)[key] = old[key];
+            if (key === 'id' || options.desiredProps?.member?.includes(key)) (args as any)[key] = member[key];
             // If undesired we skip
             else if (options.undesiredProps?.member?.includes(key)) continue;
             // If member did not say this is undesired and did not provide any desired props, we accept it
-            else if (!options.desiredProps?.member?.length) (args as any)[key] = old[key];
+            else if (!options.desiredProps?.member?.length) (args as any)[key] = member[key];
         }
 
         // Add to memory
         bot.cache.members.set(args);
 
         // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
-        return old;
+        return member;
     };
 
-    bot.transformers.customizers.user = (_, _payload, old) => {
+    bot.transformers.customizers.user = (_bot, _payload, user) => {
         // If user should be cached, but id is missing, we can't cache it
-        if (!('id' in old) && (options.cacheInMemory?.user || options.cacheOutsideMemory?.user)) return console.warn(`[CACHE] Can't cache user since id is missing.`);
+        if (!('id' in user) && (options.cacheInMemory?.user || options.cacheOutsideMemory?.user)) return console.warn(`[CACHE] Can't cache user since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
         const args: FilteredProxyCacheTypes<T, Props, Behavior>['user'] = Object.create(baseUser);
 
-        const keys = Object.keys(old) as (keyof typeof old)[];
+        const keys = Object.keys(user) as (keyof typeof user)[];
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.user?.includes(key)) (args as any)[key] = old[key];
+            if (key === 'id' || options.desiredProps?.user?.includes(key)) (args as any)[key] = user[key];
             // If undesired we skip
             else if (options.undesiredProps?.user?.includes(key)) continue;
             // If user did not say this is undesired and did not provide any desired props, we accept it
-            else if (!options.desiredProps?.user?.length) (args as any)[key] = old[key];
+            else if (!options.desiredProps?.user?.length) (args as any)[key] = user[key];
         }
 
         // Add to memory
         bot.cache.users.set(args);
 
         // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
-        return old;
+        return user;
     };
 
-    bot.transformers.customizers.guild = (_, payload, old) => {
+    bot.transformers.customizers.guild = (_bot, payload, guild) => {
         // If guild should be cached, but id is missing, we can't cache it
-        if (!('id' in old)) {
+        if (!('id' in guild)) {
             if (options.cacheInMemory?.guild || options.cacheOutsideMemory?.guild) console.warn(`[CACHE] Can't cache guild since id is missing.`);
 
             return;
@@ -656,21 +656,21 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // @ts-ignore
         const args: FilteredProxyCacheTypes<T, Props, Behavior>['guild'] = Object.create(baseGuild);
 
-        const keys = Object.keys(old) as (keyof typeof old)[];
+        const keys = Object.keys(guild) as (keyof typeof guild)[];
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.guild?.includes(key as any)) (args as any)[key] = old[key];
+            if (key === 'id' || options.desiredProps?.guild?.includes(key as any)) (args as any)[key] = guild[key];
             // If undesired we skip
             else if (options.undesiredProps?.guild?.includes(key as any)) continue;
             // If guild did not say this is undesired and did not provide any desired props, we accept it
-            else if (!options.desiredProps?.guild?.length) (args as any)[key] = old[key];
+            else if (!options.desiredProps?.guild?.length) (args as any)[key] = guild[key];
         }
 
-        const pendingGuildData = pendingGuildsData.get(old.id as Guild['id']);
+        const pendingGuildData = pendingGuildsData.get(guild.id as Guild['id']);
 
         if (pendingGuildData) {
-            pendingGuildsData.delete(old.id as Guild['id']);
+            pendingGuildsData.delete(guild.id as Guild['id']);
 
             if (pendingGuildData.channels?.size) args.channels = new Collection([...pendingGuildData.channels, ...(args.channels || [])]);
             if (pendingGuildData.members?.size) args.members = new Collection([...pendingGuildData.members, ...(args.members || [])]);
@@ -715,66 +715,66 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         if (payload.members) {
             for (const member of payload.members) {
                 if (member.user) {
-                    bot.transformers.member(bot, member, old.id as Guild['id'], BigInt(member.user.id));
+                    bot.transformers.member(bot, member, guild.id as Guild['id'], BigInt(member.user.id));
                     bot.transformers.user(bot, member.user);
                 }
             }
         }
 
         // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
-        return old;
+        return guild;
     };
 
-    bot.transformers.customizers.channel = (_, _payload, old) => {
+    bot.transformers.customizers.channel = (_bot, _payload, channel) => {
         // If channel should be cached, but id is missing, we can't cache it
-        if (!('id' in old) && (options.cacheInMemory?.channel || options.cacheOutsideMemory?.channel)) return console.warn(`[CACHE] Can't cache channel since id is missing.`);
+        if (!('id' in channel) && (options.cacheInMemory?.channel || options.cacheOutsideMemory?.channel)) return console.warn(`[CACHE] Can't cache channel since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
         const args: FilteredProxyCacheTypes<T, Props, Behavior>['channel'] = Object.create(baseChannel);
 
-        const keys = Object.keys(old) as (keyof typeof old)[];
+        const keys = Object.keys(channel) as (keyof typeof channel)[];
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.channel?.includes(key)) (args as any)[key] = old[key];
+            if (key === 'id' || options.desiredProps?.channel?.includes(key)) (args as any)[key] = channel[key];
             // If undesired we skip
             else if (options.undesiredProps?.channel?.includes(key)) continue;
             // If channel did not say this is undesired and did not provide any desired props, we accept it
-            else if (!options.desiredProps?.channel?.length) (args as any)[key] = old[key];
+            else if (!options.desiredProps?.channel?.length) (args as any)[key] = channel[key];
         }
 
         // Add to memory
         bot.cache.channels.set(args);
 
         // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
-        return old;
+        return channel;
     };
 
-    bot.transformers.customizers.role = (_, _payload, old) => {
+    bot.transformers.customizers.role = (_bot, _payload, role) => {
         // If role should be cached, but id is missing, we can't cache it
-        if (!('id' in old) && (options.cacheInMemory?.role || options.cacheOutsideMemory?.role)) return console.warn(`[CACHE] Can't cache role since id is missing.`);
+        if (!('id' in role) && (options.cacheInMemory?.role || options.cacheOutsideMemory?.role)) return console.warn(`[CACHE] Can't cache role since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
         const args: FilteredProxyCacheTypes<T, Props, Behavior>['role'] = Object.create(baseRole);
 
-        const keys = Object.keys(old) as (keyof typeof old)[];
+        const keys = Object.keys(role) as (keyof typeof role)[];
 
         for (const key of keys) {
             // ID is required. Desired props take priority.
-            if (key === 'id' || options.desiredProps?.role?.includes(key)) (args as any)[key] = old[key];
+            if (key === 'id' || options.desiredProps?.role?.includes(key)) (args as any)[key] = role[key];
             // If undesired we skip
             else if (options.undesiredProps?.role?.includes(key)) continue;
             // If role did not say this is undesired and did not provide any desired props, we accept it
-            else if (!options.desiredProps?.role?.length) (args as any)[key] = old[key];
+            else if (!options.desiredProps?.role?.length) (args as any)[key] = role[key];
         }
 
         // Add to memory
         bot.cache.roles.set(args);
 
         // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
-        return old;
+        return role;
     };
 
     setupCacheEdits(bot);
