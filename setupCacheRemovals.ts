@@ -19,7 +19,7 @@ export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, P
         const id = bot.transformers.snowflake(payload.id);
 
         // Remove the guild from cache
-        bot.cache.options.bulk?.removeGuild?.(id);
+        bot.cache.guilds.delete(id);
 
         GUILD_DELETE(bot, data, shardId);
     };
@@ -36,7 +36,8 @@ export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, P
         const payload = data.d as DiscordGuildRoleDelete;
         const id = bot.transformers.snowflake(payload.role_id);
 
-        bot.cache.options.bulk?.removeRole?.(id);
+        // Remove the role from cache
+        bot.cache.roles.delete(id);
 
         GUILD_ROLE_DELETE(bot, data, shardId);
     };
