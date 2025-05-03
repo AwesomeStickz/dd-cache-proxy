@@ -7,8 +7,8 @@ export const setupCacheEdits = <T extends ProxyCacheTypes<Props, Behavior>, Prop
     bot.handlers.GUILD_MEMBER_ADD = async (_, data, shardId) => {
         const payload = data.d as DiscordGuildMemberAdd;
 
-        const guildID = bot.transformers.snowflake(payload.guild_id);
-        const guild = bot.cache.guilds.memory.get(guildID);
+        const guildId = bot.transformers.snowflake(payload.guild_id);
+        const guild = await bot.cache.guilds.get(guildId);
 
         if (guild) {
             if ('memberCount' in guild) (guild.memberCount as Guild['memberCount'])++;
@@ -22,8 +22,8 @@ export const setupCacheEdits = <T extends ProxyCacheTypes<Props, Behavior>, Prop
     bot.handlers.GUILD_MEMBER_REMOVE = async (_, data, shardId) => {
         const payload = data.d as DiscordGuildMemberRemove;
 
-        const guildID = bot.transformers.snowflake(payload.guild_id);
-        const guild = bot.cache.guilds.memory.get(guildID);
+        const guildId = bot.transformers.snowflake(payload.guild_id);
+        const guild = await bot.cache.guilds.get(guildId);
 
         if (guild) {
             if ('memberCount' in guild) (guild.memberCount as Guild['memberCount'])--;
