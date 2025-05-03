@@ -242,14 +242,14 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (options.cacheOutsideMemory?.guild && options.setItem) await options.setItem('guild', guild);
         },
         delete: async (guildId) => {
+            // Handle bulk removal of channels
+            await options.bulk?.removeGuild?.(guildId);
+
             // Remove from memory
             bot.cache.guilds.memory.delete(guildId);
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('guild', guildId);
-
-            // Handle bulk removal of channels
-            await options.bulk?.removeGuild?.(guildId);
         },
     };
 
@@ -394,15 +394,15 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (options.cacheOutsideMemory?.role && options.setItem) await options.setItem('role', internalRole);
         },
         delete: async (roleId) => {
+            // Handle bulk removal of member roles
+            await options.bulk?.removeRole?.(roleId);
+
             // Remove from memory
             bot.cache.guilds.memory.get(bot.cache.roles.guildIds.get(roleId)!)?.roles?.delete(roleId);
             bot.cache.roles.guildIds.delete(roleId);
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('role', roleId);
-
-            // Handle bulk removal of member roles
-            await options.bulk?.removeRole?.(roleId);
         },
     };
 
