@@ -81,11 +81,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         }
     >();
 
-    if (!bot.cache.options.cacheInMemory) bot.cache.options.cacheInMemory = { default: true };
-    if (!bot.cache.options.cacheOutsideMemory) bot.cache.options.cacheOutsideMemory = { default: false };
-
-    const cacheInMemoryDefault = bot.cache.options.cacheInMemory.default;
-    const cacheOutsideMemoryDefault = bot.cache.options.cacheOutsideMemory.default;
+    // Set default values for cacheInMemory and cacheOutsideMemory, true for in-memory and false for outside memory if not overriden by user
+    const cacheInMemoryDefault = bot.cache.options.cacheInMemory?.default ?? true;
+    const cacheOutsideMemoryDefault = bot.cache.options.cacheOutsideMemory?.default ?? false;
 
     bot.cache.options.cacheInMemory = {
         channel: cacheInMemoryDefault,
@@ -882,7 +880,7 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
         /** Whether or not to cache users. */
         user?: boolean;
         /** Default value for the properties that are not provided inside `cacheInMemory`. */
-        default: boolean;
+        default?: boolean;
     };
     /**
      * Options to choose how the proxy will cache in a separate persitant cache.
@@ -901,7 +899,7 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
         /** Whether or not to cache users. */
         user?: boolean;
         /** Default value for the properties that are not provided inside `cacheOutsideMemory`. */
-        default: boolean;
+        default?: boolean;
     };
     /** Handler to get an object from a specific table. */
     getItem?: <K extends keyof T>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<FilteredProxyCacheTypes<T, Props, Behavior>[K]>;
