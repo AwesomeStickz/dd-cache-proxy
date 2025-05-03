@@ -593,7 +593,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     // MAKE SURE TO NOT MOVE THIS BELOW GUILD CUSTOMIZER
     bot.transformers.customizers.member = (_, _payload, old) => {
-        if (!('id' in old)) return console.warn(`[CACHE] Can't cache member since id is missing.`);
+        // If member should be cached, but id is missing, we can't cache it
+        if (!('id' in old) && (options.cacheInMemory?.member || options.cacheOutsideMemory?.member)) return console.warn(`[CACHE] Can't cache member since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
@@ -606,7 +607,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (key === 'id' || options.desiredProps?.member?.includes(key)) (args as any)[key] = old[key];
             // If undesired we skip
             else if (options.undesiredProps?.member?.includes(key)) continue;
-            // If member did not say this is undesired and did not provide any desired props we accept it
+            // If member did not say this is undesired and did not provide any desired props, we accept it
             else if (!options.desiredProps?.member?.length) (args as any)[key] = old[key];
         }
 
@@ -618,7 +619,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     bot.transformers.customizers.user = (_, _payload, old) => {
-        if (!('id' in old)) return console.warn(`[CACHE] Can't cache user since id is missing.`);
+        // If user should be cached, but id is missing, we can't cache it
+        if (!('id' in old) && (options.cacheInMemory?.user || options.cacheOutsideMemory?.user)) return console.warn(`[CACHE] Can't cache user since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
@@ -631,7 +633,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (key === 'id' || options.desiredProps?.user?.includes(key)) (args as any)[key] = old[key];
             // If undesired we skip
             else if (options.undesiredProps?.user?.includes(key)) continue;
-            // If user did not say this is undesired and did not provide any desired props we accept it
+            // If user did not say this is undesired and did not provide any desired props, we accept it
             else if (!options.desiredProps?.user?.length) (args as any)[key] = old[key];
         }
 
@@ -643,7 +645,12 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     bot.transformers.customizers.guild = (_, payload, old) => {
-        if (!('id' in old)) return console.warn(`[CACHE] Can't cache guild since id is missing.`);
+        // If guild should be cached, but id is missing, we can't cache it
+        if (!('id' in old)) {
+            if (options.cacheInMemory?.guild || options.cacheOutsideMemory?.guild) console.warn(`[CACHE] Can't cache guild since id is missing.`);
+
+            return;
+        }
 
         // Filter to desired args
         // @ts-ignore
@@ -656,7 +663,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (key === 'id' || options.desiredProps?.guild?.includes(key as any)) (args as any)[key] = old[key];
             // If undesired we skip
             else if (options.undesiredProps?.guild?.includes(key as any)) continue;
-            // If guild did not say this is undesired and did not provide any desired props we accept it
+            // If guild did not say this is undesired and did not provide any desired props, we accept it
             else if (!options.desiredProps?.guild?.length) (args as any)[key] = old[key];
         }
 
@@ -719,7 +726,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     bot.transformers.customizers.channel = (_, _payload, old) => {
-        if (!('id' in old)) return console.warn(`[CACHE] Can't cache channel since id is missing.`);
+        // If channel should be cached, but id is missing, we can't cache it
+        if (!('id' in old) && (options.cacheInMemory?.channel || options.cacheOutsideMemory?.channel)) return console.warn(`[CACHE] Can't cache channel since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
@@ -732,7 +740,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (key === 'id' || options.desiredProps?.channel?.includes(key)) (args as any)[key] = old[key];
             // If undesired we skip
             else if (options.undesiredProps?.channel?.includes(key)) continue;
-            // If channel did not say this is undesired and did not provide any desired props we accept it
+            // If channel did not say this is undesired and did not provide any desired props, we accept it
             else if (!options.desiredProps?.channel?.length) (args as any)[key] = old[key];
         }
 
@@ -744,7 +752,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     bot.transformers.customizers.role = (_, _payload, old) => {
-        if (!('id' in old)) return console.warn(`[CACHE] Can't cache role since id is missing.`);
+        // If role should be cached, but id is missing, we can't cache it
+        if (!('id' in old) && (options.cacheInMemory?.role || options.cacheOutsideMemory?.role)) return console.warn(`[CACHE] Can't cache role since id is missing.`);
 
         // Filter to desired args
         // @ts-ignore
@@ -757,7 +766,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (key === 'id' || options.desiredProps?.role?.includes(key)) (args as any)[key] = old[key];
             // If undesired we skip
             else if (options.undesiredProps?.role?.includes(key)) continue;
-            // If role did not say this is undesired and did not provide any desired props we accept it
+            // If role did not say this is undesired and did not provide any desired props, we accept it
             else if (!options.desiredProps?.role?.length) (args as any)[key] = old[key];
         }
 
