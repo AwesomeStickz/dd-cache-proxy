@@ -107,14 +107,21 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     const internalBulkRemover = {
         removeChannel: async (id: bigint) => {
+            const guildId = bot.cache.channels.guildIds.get(id);
+            if (!guildId) return;
+
+            // If guilds are cached, use the channels inside the guild, Otherwise use global channels cache
+            const channelsCollection = options.cacheInMemory?.guild ? bot.cache.guilds.memory.get(guildId)?.channels : bot.cache.channels.memory;
+            if (!channelsCollection) return;
+
             // Remove all threads that are in this channel
-            bot.cache.channels.memory.forEach((thread) => {
+            for (const [threadId, thread] of channelsCollection.entries()) {
                 if ((thread as unknown as Channel).parentId === id) {
-                    bot.cache.channels.memory.delete((thread as unknown as Channel).id);
-                    bot.cache.channels.guildIds.delete((thread as unknown as Channel).id);
-                    bot.cache.channels.guildIds.delete((thread as unknown as Channel).id);
+                    channelsCollection.delete(threadId);
+
+                    bot.cache.channels.guildIds.delete(threadId);
                 }
-            });
+            }
         },
         removeGuild: async (id: bigint) => {
             // Remove all channels that are in this guild
@@ -576,6 +583,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (options.cacheOutsideMemory?.channel && options.setItem) await options.setItem('channel', internalChannel);
         },
         delete: async (channelId) => {
+            // Handle bulk removal of threads within the channel
+            await options.bulk?.removeChannel?.(channelId);
+
             // Remove from memory
             bot.cache.channels.memory.delete(channelId);
             bot.cache.guilds.memory.get(bot.cache.channels.guildIds.get(channelId)!)?.channels?.delete(channelId);
@@ -583,9 +593,6 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('channel', channelId);
-
-            // Handle bulk removal of threads within the channel
-            await options.bulk?.removeChannel?.(channelId);
         },
     };
 
