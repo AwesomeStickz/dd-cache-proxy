@@ -125,30 +125,27 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         },
         removeGuild: async (id: bigint) => {
             // Remove all channels that are in this guild
-            bot.cache.channels.memory.forEach((channel) => {
+            for (const [channelId, channel] of bot.cache.channels.memory.entries()) {
                 if ((channel as unknown as Channel).guildId === id) {
-                    bot.cache.channels.memory.delete((channel as unknown as Channel).id);
-                    bot.cache.channels.guildIds.delete((channel as unknown as Channel).id);
-                    bot.cache.channels.guildIds.delete((channel as unknown as Channel).id);
+                    bot.cache.channels.memory.delete(channelId);
+                    bot.cache.channels.guildIds.delete(channelId);
                 }
-            });
+            }
         },
         removeRole: async (id: bigint) => {
             const guildId = bot.cache.roles.guildIds.get(id);
-            if (guildId) {
-                // Get the guild if its in cache
-                const guild = bot.cache.guilds.memory.get(guildId);
-                if (guild) {
-                    // if roles are stored inside the guild remove it
-                    guild.roles?.delete(id);
-                    // Each mem who has this role needs to be edited and the role id removed
-                    guild.members?.forEach((member) => {
-                        if ((member as unknown as Member).roles?.includes(id)) (member as unknown as Member).roles = (member as unknown as Member).roles.filter((roleId) => roleId !== id);
-                    });
-                }
-            }
+            if (!guildId) return;
 
-            bot.cache.roles.guildIds.delete(id);
+            // Get the guild if it's in cache
+            const guild = bot.cache.guilds.memory.get(guildId);
+            if (!guild) return;
+
+            // Each member who has this role needs to be edited and the role id removed
+            for (const member of guild.members?.values() || []) {
+                const m = member as unknown as Member;
+
+                if (m.roles?.includes(id)) m.roles = m.roles.filter((roleId) => roleId !== id);
+            }
         },
     };
 
@@ -785,34 +782,41 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
         setInterval(() => {
             if (filter.channel)
-                bot.cache.channels.memory.forEach((channel) => {
-                    if (filter.channel?.(channel)) bot.cache.channels.memory.delete((channel as unknown as Channel).id);
-                });
+                for (const [channelId, channel] of bot.cache.channels.memory.entries()) {
+                    if (filter.channel?.(channel)) bot.cache.channels.memory.delete(channelId);
+                }
 
             if (filter.guild || filter.channel || filter.member || filter.role)
-                bot.cache.guilds.memory.forEach((guild): boolean | void => {
-                    if (filter.guild?.(guild)) return bot.cache.guilds.memory.delete((guild as unknown as Guild).id);
+                for (const [guildId, guild] of bot.cache.guilds.memory.entries()) {
+                    if (filter.guild?.(guild)) {
+                        bot.cache.guilds.memory.delete(guildId);
 
-                    if (guild.channels && filter.channel)
-                        guild.channels.forEach((channel) => {
-                            if (filter.channel?.(channel)) guild.channels?.delete((channel as unknown as Channel).id);
-                        });
+                        continue;
+                    }
 
-                    if (guild.members && filter.member)
-                        guild.members.forEach((member) => {
-                            if (filter.member?.(member)) guild.members?.delete((member as unknown as Member).id);
-                        });
+                    if (guild.channels && filter.channel) {
+                        for (const [channelId, channel] of guild.channels.entries()) {
+                            if (filter.channel?.(channel)) guild.channels?.delete(channelId);
+                        }
+                    }
 
-                    if (guild.roles && filter.role)
-                        guild.roles.forEach((role) => {
-                            if (filter.role?.(role)) guild.roles?.delete((role as unknown as Role).id);
-                        });
-                });
+                    if (guild.members && filter.member) {
+                        for (const [memberId, member] of guild.members.entries()) {
+                            if (filter.member?.(member)) guild.members?.delete(memberId);
+                        }
+                    }
+
+                    if (guild.roles && filter.role) {
+                        for (const [roleId, role] of guild.roles.entries()) {
+                            if (filter.role?.(role)) guild.roles?.delete(roleId);
+                        }
+                    }
+                }
 
             if (filter.user)
-                bot.cache.users.memory.forEach((user) => {
-                    if (filter.user?.(user)) bot.cache.users.memory.delete((user as unknown as User).id);
-                });
+                for (const [userId, user] of bot.cache.users.memory.entries()) {
+                    if (filter.user?.(user)) bot.cache.users.memory.delete(userId);
+                }
         }, interval);
     }
 
