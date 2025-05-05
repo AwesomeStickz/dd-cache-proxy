@@ -229,6 +229,45 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 }
             }
 
+            const pendingGuildData = pendingGuildsData.get((guild as unknown as Guild).id);
+
+            if (pendingGuildData) {
+                pendingGuildsData.delete((guild as unknown as Guild).id);
+
+                if (pendingGuildData.channels?.size) guild.channels = new Collection([...(guild.channels || []), ...pendingGuildData.channels]);
+                if (pendingGuildData.members?.size) guild.members = new Collection([...(guild.members || []), ...pendingGuildData.members]);
+                if (pendingGuildData.roles?.size) guild.roles = new Collection([...(guild.roles || []), ...pendingGuildData.roles]);
+            }
+
+            // Update last interacted time for all channels, members and roles
+            // NOTE: Do not recreate the objects to preserve the getters
+            if (guild.channels)
+                guild.channels = new Collection(
+                    guild.channels.array().map((channel) => {
+                        channel.lastInteractedTime = Date.now();
+
+                        return [(channel as unknown as Channel).id, channel];
+                    })
+                );
+
+            if (guild.members)
+                guild.members = new Collection(
+                    guild.members.array().map((member) => {
+                        member.lastInteractedTime = Date.now();
+
+                        return [(member as unknown as Member).id, member];
+                    })
+                );
+
+            if (guild.roles)
+                guild.roles = new Collection(
+                    guild.roles.array().map((role) => {
+                        role.lastInteractedTime = Date.now();
+
+                        return [(role as unknown as Role).id, role];
+                    })
+                );
+
             guild.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
@@ -666,45 +705,6 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // If guild did not say this is undesired and did not provide any desired props, we accept it
             else if (!options.desiredProps?.guild?.length) (args as any)[key] = guild[key];
         }
-
-        const pendingGuildData = pendingGuildsData.get(guild.id as Guild['id']);
-
-        if (pendingGuildData) {
-            pendingGuildsData.delete(guild.id as Guild['id']);
-
-            if (pendingGuildData.channels?.size) args.channels = new Collection([...pendingGuildData.channels, ...(args.channels || [])]);
-            if (pendingGuildData.members?.size) args.members = new Collection([...pendingGuildData.members, ...(args.members || [])]);
-            if (pendingGuildData.roles?.size) args.roles = new Collection([...pendingGuildData.roles, ...(args.roles || [])]);
-        }
-
-        // Update last interacted time for all channels, members and roles
-        // NOTE: Do not recreate the objects to preserve the getters
-        if (args.channels)
-            args.channels = new Collection(
-                args.channels.array().map((channel) => {
-                    channel.lastInteractedTime = Date.now();
-
-                    return [(channel as unknown as Channel).id, channel];
-                })
-            );
-
-        if (args.members)
-            args.members = new Collection(
-                args.members.array().map((member) => {
-                    member.lastInteractedTime = Date.now();
-
-                    return [(member as unknown as Member).id, member];
-                })
-            );
-
-        if (args.roles)
-            args.roles = new Collection(
-                args.roles.array().map((role) => {
-                    role.lastInteractedTime = Date.now();
-
-                    return [(role as unknown as Role).id, role];
-                })
-            );
 
         // Set approximate member count as member count if payload is from API
         if (payload.approximate_member_count && (options.desiredProps?.guild as (keyof Guild)[])?.includes('memberCount')) (args as unknown as Guild).memberCount = payload.approximate_member_count;
