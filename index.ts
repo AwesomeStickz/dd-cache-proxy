@@ -239,12 +239,12 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 if (pendingGuildData.roles?.size) guild.roles = new Collection([...(guild.roles || []), ...pendingGuildData.roles]);
             }
 
-            // Update last interacted time for all channels, members and roles
+            // Update last interacted time all channels, members and roles that don't have it set
             // NOTE: Do not recreate the objects to preserve the getters
             if (guild.channels)
                 guild.channels = new Collection(
                     guild.channels.array().map((channel) => {
-                        channel.lastInteractedTime = Date.now();
+                        if (!channel.lastInteractedTime) channel.lastInteractedTime = Date.now();
 
                         return [(channel as unknown as Channel).id, channel];
                     })
@@ -253,7 +253,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (guild.members)
                 guild.members = new Collection(
                     guild.members.array().map((member) => {
-                        member.lastInteractedTime = Date.now();
+                        if (!member.lastInteractedTime) member.lastInteractedTime = Date.now();
 
                         return [(member as unknown as Member).id, member];
                     })
@@ -262,7 +262,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (guild.roles)
                 guild.roles = new Collection(
                     guild.roles.array().map((role) => {
-                        role.lastInteractedTime = Date.now();
+                        if (!role.lastInteractedTime) role.lastInteractedTime = Date.now();
 
                         return [(role as unknown as Role).id, role];
                     })
