@@ -709,9 +709,6 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // Set approximate member count as member count if payload is from API
         if (payload.approximate_member_count && (options.desiredProps?.guild as (keyof Guild)[])?.includes('memberCount')) (args as unknown as Guild).memberCount = payload.approximate_member_count;
 
-        // Add to memory
-        bot.cache.guilds.set(args);
-
         if (payload.members) {
             for (const member of payload.members) {
                 if (member.user) {
@@ -720,6 +717,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 }
             }
         }
+
+        // Add to memory
+        bot.cache.guilds.set(args);
 
         // Return dd object instead of cached object, as dd can have more props than cache, so the extra props would be missing in that case
         return guild;
