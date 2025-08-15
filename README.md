@@ -13,18 +13,26 @@ Used In:
 
 ```js
 import { createProxyCache } from 'dd-cache-proxy';
-import { createBot, Bot, Intents } from '@discordeno/bot';
+import { createBot, Bot, Intents, createDesiredPropertiesObject, DesiredPropertiesBehavior } from '@discordeno/bot';
+
+// Fill your discordeno desired properties here. This can have more properties than you'd like to store in your cache, as you can provide those properties later separately.
+// Check here - https://discordeno.js.org/desired-props to learn more about discordeno's desired properties.
+const desiredProperties = createDesiredPropertiesObject({});
+
+// This will be needed to provide the type for the bot parameter of our function.
+interface BotDesiredProperties extends Required<typeof desiredProperties> {}
 
 // Create a function for easier use and cleaner code.
-const getProxyCacheBot = (bot: Bot) =>
+const getProxyCacheBot = (bot: Bot<BotDesiredProperties, DesiredPropertiesBehavior.RemoveKey>) =>
     createProxyCache(bot, {
-        // Define what properties of individual cache you wish to cache. Caches no props by default. Or you can use the `undesiredProps` prop to reverse the behavior of `desiredProps`.
+        // Define what properties of individual cache you wish to cache. This property must also be in your discordeno's desired properties.
+        // Caches all props from discordeno's desired props by default. Or you can use the `undesiredProps` prop to reverse the behavior of `desiredProps`.
         desiredProps: {
             // Example props that are cached in channels and other cache. Accepts an array of props of the cache. All props are optional.
             guild: ['channels', 'icon', 'id', 'name', 'roles'],
             user: ['avatar', 'id', 'username'],
         },
-        // Define what to cache in memory. All props are optional except `default`. By default, all props inside `cacheInMemory` are set to `true`.
+        // Define what to cache in memory. By default, all props inside `cacheInMemory` are set to `true`.
         cacheInMemory: {
             // Whether or not to cache guilds.
             guild: true,
@@ -32,7 +40,7 @@ const getProxyCacheBot = (bot: Bot) =>
             // Default value for the properties that are not provided inside `cacheInMemory`.
             default: false,
         },
-        // Define what to cache outside memory. All props are optional except `default`. By default, all props inside `cacheOutsideMemory` are set to `false`.
+        // Define what to cache outside memory. By default, all props inside `cacheOutsideMemory` are set to `false`.
         cacheOutsideMemory: {
             // Whether or not to cache channels.
             channel: false,
@@ -40,7 +48,8 @@ const getProxyCacheBot = (bot: Bot) =>
             // Default value for the properties that are not provided inside `cacheOutsideMemory`.
             default: true,
         },
-        // Function to get an item from outside cache. `getItem`, `setItem`, `removeItem` must be provided if you cache outside memory, can be omitted if you don't store outside memory.
+        // Function to set an item into the outside memory cache.
+        // `getItem`, `setItem`, `removeItem` must be provided if you cache outside memory. Otherwise, you can omit these.
         setItem: (table, item) => {
             if (table === 'channel') {
                 // Custom code to store data into your cache outside memory, say redis or a database or whichever you use.
@@ -53,6 +62,7 @@ const bot = getProxyCacheBot(
     // Create the bot object.
     createBot({
         token,
+        desiredProperties,
         intents: Intents.Guilds,
     })
 );
