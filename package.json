@@ -26,9 +26,9 @@
   },
   "homepage": "https://github.com/AwesomeStickz/dd-cache-proxy#readme",
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@discordeno/bot": "^21.0.0"
+    "@discordeno/bot": "^22.0.1-next.5867d11"
   }
 }

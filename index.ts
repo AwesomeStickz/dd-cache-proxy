@@ -474,7 +474,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             const member = internalMember as unknown as Member;
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
-            if (!replaceCurrentValue) {
+            if (!replaceCurrentValue && member.guildId) {
                 const oldRole = await bot.cache.members.get(member.id, member.guildId);
 
                 // If we have the old member, we merge the new data with the old data
@@ -686,7 +686,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     bot.transformers.customizers.guild = (_bot, payload, guild) => {
         // If guild should be cached, but id is missing, we can't cache it
         if (!('id' in guild)) {
-            if (options.cacheInMemory?.guild || options.cacheOutsideMemory?.guild) console.warn(`[CACHE] Can't cache guild since id is missing.`);
+            if (options.cacheInMemory?.guild || options.cacheOutsideMemory?.guild) console.warn(`[CACHE] Can't cache guild since id is missing. Please make sure that you enabled it in Discordeno's desired properties (https://discordeno.js.org/desired-props) AND cache proxy's desiredProps.`);
 
             return;
         }
@@ -712,7 +712,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         if (payload.members) {
             for (const member of payload.members) {
                 if (member.user) {
-                    bot.transformers.member(bot, member, guild.id as Guild['id'], BigInt(member.user.id));
+                    bot.transformers.member(bot, member, { guildId: guild.id as Guild['id'], userId: BigInt(member.user.id) });
                     bot.transformers.user(bot, member.user);
                 }
             }
