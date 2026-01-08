@@ -7,6 +7,8 @@ Initially forked from [cache-proxy](https://github.com/discordeno/cache-proxy), 
 Used In:
 
 -   [Giveaway Boat](https://giveaway.boats)
+-   [Booster Bot](https://boosterbot.xyz)
+-   [Greed](https://greed.best)
 -   Contact [me](https://github.com/AwesomeStickz#contact-me) if you'd like to add your bot here!
 
 ## Example Usage:
