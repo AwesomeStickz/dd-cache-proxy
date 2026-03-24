@@ -24,9 +24,9 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
         channels: {
             guildIds: Collection<bigint, bigint>;
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel']>;
-            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'] | undefined>;
+            get: (id: bigint, guildId?: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'] | undefined>;
             set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint) => Promise<void>;
+            delete: (id: bigint, guildId?: bigint) => Promise<void>;
         };
         guilds: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild']>;
@@ -41,9 +41,9 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
         };
         roles: {
             guildIds: Collection<bigint, bigint>;
-            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'] | undefined>;
+            get: (id: bigint, guildId: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'] | undefined>;
             set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint) => Promise<void>;
+            delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         users: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user']>;
@@ -104,8 +104,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     const internalBulkRemover = {
-        removeChannel: async (id: bigint) => {
-            const guildId = bot.cache.channels.guildIds.get(id);
+        removeChannel: async (id: bigint, guildId?: bigint) => {
+            guildId ||= bot.cache.channels.guildIds.get(id);
             if (!guildId) return;
 
             // If guilds are cached, use the channels inside the guild, Otherwise use global channels cache
@@ -130,10 +130,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 }
             }
         },
-        removeRole: async (id: bigint) => {
-            const guildId = bot.cache.roles.guildIds.get(id);
-            if (!guildId) return;
-
+        removeRole: async (id: bigint, guildId: bigint) => {
             // Get the guild if it's in cache
             const guild = bot.cache.guilds.memory.get(guildId);
             if (!guild) return;
@@ -155,11 +152,11 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     // If user passed bulk.removeChannel else if replaceInternalBulkRemover.channel is not set to true
     if (removeChannel || !replaceInternalBulkRemover?.channel) {
-        bot.cache.options.bulk.removeChannel = async (id) => {
+        bot.cache.options.bulk.removeChannel = async (id, guildId) => {
             // If replaceInternalBulkRemover.channel is not set to true, run internal channel bulk remover
-            if (!replaceInternalBulkRemover?.channel) await internalBulkRemover.removeChannel(id);
+            if (!replaceInternalBulkRemover?.channel) await internalBulkRemover.removeChannel(id, guildId);
             // If user passed bulk.removeChannel, run passed bulk remover
-            await removeChannel?.(id);
+            await removeChannel?.(id, guildId);
         };
     }
 
@@ -175,11 +172,11 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     // If user passed bulk.removeRole else if replaceInternalBulkRemover.role is not set to true
     if (removeRole || !replaceInternalBulkRemover?.role) {
-        bot.cache.options.bulk.removeRole = async (id) => {
+        bot.cache.options.bulk.removeRole = async (id, guildId) => {
             // If replaceInternalBulkRemover.role is not set to true, run internal role bulk remover
-            if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id);
+            if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id, guildId);
             // If user passed bulk.removeRole, run passed bulk remover
-            await removeRole?.(id);
+            await removeRole?.(id, guildId);
         };
     }
 
@@ -350,19 +347,16 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     bot.cache.roles = {
         guildIds: new Collection(),
-        get: async (roleId) => {
+        get: async (roleId, guildId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.role) {
                 // If guilds are cached, roles will be inside them
                 if (options.cacheInMemory?.guild) {
-                    const guildId = bot.cache.roles.guildIds.get(roleId);
-                    if (guildId) {
-                        const role = bot.cache.guilds.memory.get(guildId)?.roles?.get(roleId);
-                        if (role) {
-                            role.lastInteractedTime = Date.now();
+                    const role = bot.cache.guilds.memory.get(guildId)?.roles?.get(roleId);
+                    if (role) {
+                        role.lastInteractedTime = Date.now();
 
-                            return role;
-                        }
+                        return role;
                     }
                 }
             }
@@ -370,7 +364,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.role || !options.getItem) return;
 
-            const stored = await options.getItem('role', roleId);
+            const stored = await options.getItem('role', roleId, guildId || 0n);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
@@ -387,7 +381,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
-                const oldRole = await bot.cache.roles.get(role.id);
+                const oldRole = await bot.cache.roles.get(role.id, role.guildId);
 
                 // If we have the old role, we merge the new data with the old data
                 if (oldRole) {
@@ -427,16 +421,16 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.role && options.setItem) await options.setItem('role', internalRole);
         },
-        delete: async (roleId) => {
+        delete: async (roleId, guildId) => {
             // Handle bulk removal of member roles
-            await options.bulk?.removeRole?.(roleId);
+            await options.bulk?.removeRole?.(roleId, guildId);
 
             // Remove from memory
             bot.cache.guilds.memory.get(bot.cache.roles.guildIds.get(roleId)!)?.roles?.delete(roleId);
             bot.cache.roles.guildIds.delete(roleId);
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('role', roleId);
+            if (options.removeItem) await options.removeItem('role', roleId, guildId);
         },
     };
 
@@ -524,12 +518,12 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     bot.cache.channels = {
         guildIds: new Collection(),
         memory: new Collection(),
-        get: async (channelId) => {
+        get: async (channelId, guildId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.channel) {
                 // If guilds are cached, channels will be inside them
                 if (options.cacheInMemory?.guild) {
-                    const guildId = bot.cache.channels.guildIds.get(channelId);
+                    guildId ||= bot.cache.channels.guildIds.get(channelId);
                     if (guildId) {
                         const channel = bot.cache.guilds.memory.get(guildId)?.channels?.get(channelId);
                         if (channel) {
@@ -576,7 +570,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
-                const oldChannel = await bot.cache.channels.get(channel.id);
+                const oldChannel = await bot.cache.channels.get(channel.id, channel.guildId);
 
                 // If we have the old channel, we merge the new data with the old data
                 if (oldChannel) {
@@ -616,9 +610,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.channel && options.setItem) await options.setItem('channel', internalChannel);
         },
-        delete: async (channelId) => {
+        delete: async (channelId, guildId) => {
             // Handle bulk removal of threads within the channel
-            await options.bulk?.removeChannel?.(channelId);
+            await options.bulk?.removeChannel?.(channelId, guildId);
 
             // Remove from memory
             bot.cache.channels.memory.delete(channelId);
@@ -626,7 +620,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             bot.cache.channels.guildIds.delete(channelId);
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('channel', channelId);
+            if (options.removeItem) await options.removeItem('channel', channelId, guildId);
         },
     };
 
@@ -911,11 +905,11 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
         default?: boolean;
     };
     /** Handler to get an object from a specific table. */
-    getItem?: <K extends keyof T>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<FilteredProxyCacheTypes<T, Props, Behavior>[K]>;
+    getItem?: <K extends keyof T>(...args: [table: Exclude<K, 'channel' | 'member' | 'role'>, id: bigint] | [table: Extract<K, 'member' | 'role'>, id: bigint, guildId: bigint] | [table: 'channel', id: bigint, guildId?: bigint]) => Promise<FilteredProxyCacheTypes<T, Props, Behavior>[K]>;
     /** Handler to set an object in a specific table. */
     setItem?: <K extends keyof T>(table: K, item: FilteredProxyCacheTypes<T, Props, Behavior>[K]) => Promise<FilteredProxyCacheTypes<T, Props, Behavior>[K]>;
     /** Handler to delete an object in a specific table. */
-    removeItem?: <K extends keyof T>(...args: [table: Exclude<K, 'member'>, id: bigint] | [table: Extract<K, 'member'>, id: bigint, guildId: bigint]) => Promise<unknown>;
+    removeItem?: <K extends keyof T>(...args: [table: Exclude<K, 'channel' | 'member' | 'role'>, id: bigint] | [table: Extract<K, 'member' | 'role'>, id: bigint, guildId: bigint] | [table: 'channel', id: bigint, guildId?: bigint]) => Promise<unknown>;
     /**
      * Options for handling the removal of objects that may trigger bulk modifications or deletions of associated entities.
      *
@@ -923,11 +917,11 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
      */
     bulk?: {
         /** Handler for the removal of channels and their associated entities (e.g., threads within the channel). */
-        removeChannel?: (id: bigint) => Promise<unknown>;
+        removeChannel?: (id: bigint, guildId?: bigint) => Promise<unknown>;
         /** Handler for the removal of guilds and their associated entities (e.g., channels, members and roles). */
         removeGuild?: (id: bigint) => Promise<unknown>;
         /** Handler for the removal of roles and their associated entities (e.g., members having this role). */
-        removeRole?: (id: bigint) => Promise<unknown>;
+        removeRole?: (id: bigint, guildId: bigint) => Promise<unknown>;
         /**
          * Options to choose whether or not to replace internal removers.
          *

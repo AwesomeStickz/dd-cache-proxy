@@ -10,8 +10,9 @@ export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, P
         CHANNEL_DELETE(bot, data, shardId);
 
         const id = bot.transformers.snowflake(payload.id);
+        const guildId = payload.guild_id ? bot.transformers.snowflake(payload.guild_id) : undefined;
 
-        setTimeout(() => bot.cache.channels.delete(id), 5000);
+        setTimeout(() => bot.cache.channels.delete(id, guildId), 5000);
     };
 
     bot.handlers.GUILD_DELETE = (_, data, shardId) => {
@@ -34,10 +35,12 @@ export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, P
 
     bot.handlers.GUILD_ROLE_DELETE = (_, data, shardId) => {
         const payload = data.d as DiscordGuildRoleDelete;
+
         const id = bot.transformers.snowflake(payload.role_id);
+        const guildId = bot.transformers.snowflake(payload.guild_id);
 
         // Remove the role from cache
-        bot.cache.roles.delete(id);
+        bot.cache.roles.delete(id, guildId);
 
         GUILD_ROLE_DELETE(bot, data, shardId);
     };
@@ -48,7 +51,8 @@ export const setupCacheRemovals = <T extends ProxyCacheTypes<Props, Behavior>, P
         THREAD_DELETE(bot, data, shardId);
 
         const id = bot.transformers.snowflake(payload.id);
+        const guildId = payload.guild_id ? bot.transformers.snowflake(payload.guild_id) : undefined;
 
-        setTimeout(() => bot.cache.channels.delete(id), 5000);
+        setTimeout(() => bot.cache.channels.delete(id, guildId), 5000);
     };
 };
