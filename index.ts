@@ -22,7 +22,6 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
     cache: {
         options: CreateProxyCacheOptions<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior>;
         channels: {
-            guildIds: Collection<bigint, bigint>;
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel']>;
             get: (id: bigint, guildId?: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'] | undefined>;
             set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'], replaceCurrentValue?: boolean) => Promise<void>;
@@ -40,7 +39,6 @@ export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProp
             delete: (id: bigint, guildId: bigint) => Promise<void>;
         };
         roles: {
-            guildIds: Collection<bigint, bigint>;
             get: (id: bigint, guildId: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'] | undefined>;
             set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'], replaceCurrentValue?: boolean) => Promise<void>;
             delete: (id: bigint, guildId: bigint) => Promise<void>;
@@ -105,32 +103,28 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     const internalBulkRemover = {
         removeChannel: async (id: bigint, guildId?: bigint) => {
-            guildId ||= bot.cache.channels.guildIds.get(id);
-            if (!guildId) return;
+            if (!options.cacheInMemory?.guild && !options.cacheInMemory?.channel) return;
 
             // If guilds are cached, use the channels inside the guild, Otherwise use global channels cache
-            const channelsCollection = options.cacheInMemory?.guild ? bot.cache.guilds.memory.get(guildId)?.channels : bot.cache.channels.memory;
+            const channelsCollection = options.cacheInMemory.guild && guildId ? bot.cache.guilds.memory.get(guildId)?.channels : bot.cache.channels.memory;
             if (!channelsCollection) return;
 
             // Remove all threads that are in this channel
             for (const [threadId, thread] of channelsCollection.entries()) {
-                if ((thread as unknown as Channel).parentId === id) {
-                    channelsCollection.delete(threadId);
-
-                    bot.cache.channels.guildIds.delete(threadId);
-                }
+                if ((thread as unknown as Channel).parentId === id) channelsCollection.delete(threadId);
             }
         },
         removeGuild: async (id: bigint) => {
+            if (!options.cacheInMemory?.guild) return;
+
             // Remove all channels that are in this guild
             for (const [channelId, channel] of bot.cache.channels.memory.entries()) {
-                if ((channel as unknown as Channel).guildId === id) {
-                    bot.cache.channels.memory.delete(channelId);
-                    bot.cache.channels.guildIds.delete(channelId);
-                }
+                if ((channel as unknown as Channel).guildId === id) bot.cache.channels.memory.delete(channelId);
             }
         },
         removeRole: async (id: bigint, guildId: bigint) => {
+            if (!options.cacheInMemory?.guild && !options.cacheInMemory?.role) return;
+
             // Get the guild if it's in cache
             const guild = bot.cache.guilds.memory.get(guildId);
             if (!guild) return;
@@ -346,7 +340,6 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     bot.cache.roles = {
-        guildIds: new Collection(),
         get: async (roleId, guildId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.role) {
@@ -364,7 +357,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.role || !options.getItem) return;
 
-            const stored = await options.getItem('role', roleId, guildId || 0n);
+            const stored = await options.getItem('role', roleId, guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
@@ -399,25 +392,24 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.role) {
-                if (role.guildId) bot.cache.roles.guildIds.set(role.id, role.guildId);
-
                 if (options.cacheInMemory?.guild) {
-                    const guildId = bot.cache.roles.guildIds.get(role.id);
-                    if (guildId) {
-                        const guild = bot.cache.guilds.memory.get(guildId);
-                        if (guild) {
-                            if (!guild.roles) guild.roles = new Collection();
+                    if (!role.guildId) return console.warn(`[CACHE] Can't cache role(${role.id}) since guild.roles is enabled but a guild id was not found.`);
 
-                            guild.roles.set(role.id, internalRole);
-                        } else {
-                            const pendingGuild = pendingGuildsData.get(guildId);
-                            if (!pendingGuild) pendingGuildsData.set(guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
+                    const guild = bot.cache.guilds.memory.get(role.guildId);
 
-                            pendingGuildsData.get(guildId)?.roles!.set(role.id, internalRole);
-                        }
-                    } else console.warn(`[CACHE] Can't cache role(${role.id}) since guild.roles is enabled but a guild id was not found.`);
+                    if (guild) {
+                        if (!guild.roles) guild.roles = new Collection();
+
+                        guild.roles.set(role.id, internalRole);
+                    } else {
+                        const pendingGuild = pendingGuildsData.get(role.guildId);
+                        if (!pendingGuild) pendingGuildsData.set(role.guildId, { channels: new Collection(), members: new Collection(), roles: new Collection() });
+
+                        pendingGuildsData.get(role.guildId)?.roles!.set(role.id, internalRole);
+                    }
                 }
             }
+
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.role && options.setItem) await options.setItem('role', internalRole);
         },
@@ -426,8 +418,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             await options.bulk?.removeRole?.(roleId, guildId);
 
             // Remove from memory
-            bot.cache.guilds.memory.get(bot.cache.roles.guildIds.get(roleId)!)?.roles?.delete(roleId);
-            bot.cache.roles.guildIds.delete(roleId);
+            bot.cache.guilds.memory.get(guildId)?.roles?.delete(roleId);
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('role', roleId, guildId);
@@ -516,14 +507,12 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
     };
 
     bot.cache.channels = {
-        guildIds: new Collection(),
         memory: new Collection(),
         get: async (channelId, guildId) => {
             // If available in memory, use it.
             if (options.cacheInMemory?.channel) {
                 // If guilds are cached, channels will be inside them
                 if (options.cacheInMemory?.guild) {
-                    guildId ||= bot.cache.channels.guildIds.get(channelId);
                     if (guildId) {
                         const channel = bot.cache.guilds.memory.get(guildId)?.channels?.get(channelId);
                         if (channel) {
@@ -588,10 +577,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.channel) {
-                if (channel.guildId) bot.cache.channels.guildIds.set(channel.id, channel.guildId!);
-
                 if (options.cacheInMemory?.guild) {
-                    const guildId = bot.cache.channels.guildIds.get(channel.id);
+                    const guildId = channel.guildId;
+
                     if (guildId) {
                         const guild = bot.cache.guilds.memory.get(guildId);
                         if (guild) {
@@ -604,9 +592,10 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
                             pendingGuildsData.get(guildId)?.channels!.set(channel.id, internalChannel);
                         }
-                    } else console.warn(`[CACHE] Can't cache channel(${channel.id}) since guild.channels is enabled but a guild id was not found.`);
+                    }
                 } else bot.cache.channels.memory.set(channel.id, internalChannel);
             }
+
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.channel && options.setItem) await options.setItem('channel', internalChannel);
         },
@@ -616,8 +605,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             // Remove from memory
             bot.cache.channels.memory.delete(channelId);
-            bot.cache.guilds.memory.get(bot.cache.channels.guildIds.get(channelId)!)?.channels?.delete(channelId);
-            bot.cache.channels.guildIds.delete(channelId);
+            bot.cache.guilds.memory.get(guildId || 0n)?.channels?.delete(channelId);
 
             // Remove from non-memory cache
             if (options.removeItem) await options.removeItem('channel', channelId, guildId);
@@ -706,6 +694,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         if (payload.members) {
             for (const member of payload.members) {
                 if (member.user) {
+                    // TODO: why??
                     bot.transformers.member(bot, member, { guildId: guild.id as Guild['id'], userId: BigInt(member.user.id) });
                     bot.transformers.user(bot, member.user);
                 }
