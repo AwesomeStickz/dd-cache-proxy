@@ -542,7 +542,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             // Otherwise try to get from non-memory cache
             if (!options.cacheOutsideMemory?.channel || !options.getItem) return;
 
-            const stored = await options.getItem('channel', channelId);
+            const stored = await options.getItem('channel', channelId, guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
