@@ -362,7 +362,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.role) bot.cache.roles.set(stored);
+                if (options.cacheInMemory?.role) bot.cache.guilds.memory.get(guildId)?.roles?.set(roleId, stored);
             }
 
             return stored;
@@ -448,7 +448,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.member) bot.cache.members.set(stored);
+                if (options.cacheInMemory?.member) bot.cache.guilds.memory.get(guildId)?.members?.set(memberId, stored);
             }
 
             return stored;
