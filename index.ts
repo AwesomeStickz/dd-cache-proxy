@@ -1,4 +1,4 @@
-import { baseChannel, baseGuild, baseMember, baseRole, baseUser, Bot, Channel, Collection, Guild, Member, Role, User, type DesiredPropertiesBehavior, type SetupDesiredProps, type TransformersDesiredProperties } from '@discordeno/bot';
+import { baseChannel, baseGuild, baseMember, baseRole, baseUser, Bot, Channel, ChannelTypes, Collection, Guild, Member, Role, User, type DesiredPropertiesBehavior, type SetupDesiredProps, type TransformersDesiredProperties } from '@discordeno/bot';
 import { setupCacheEdits } from './setupCacheEdits.js';
 import { setupCacheRemovals } from './setupCacheRemovals.js';
 import { setupDummyEvents } from './setupDummyEvents.js';
@@ -133,6 +133,8 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         ...bot.cache.options.cacheOutsideMemory,
     };
 
+    const threadTypes = [ChannelTypes.AnnouncementThread, ChannelTypes.PrivateThread, ChannelTypes.PublicThread];
+
     const internalBulkRemover = {
         removeChannel: async (id: bigint, guildId?: bigint) => {
             if (!options.cacheInMemory?.guild && !options.cacheInMemory?.channel) return;
@@ -142,8 +144,10 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!channelsCollection) return;
 
             // Remove all threads that are in this channel
-            for (const [threadId, thread] of channelsCollection.entries()) {
-                if ((thread as unknown as Channel).parentId === id) channelsCollection.delete(threadId);
+            for (const [channelId, channel] of channelsCollection.entries()) {
+                const thread = channel as unknown as Channel;
+
+                if (threadTypes.includes(thread.type) && thread.parentId === id) channelsCollection.delete(channelId);
             }
         },
         removeGuild: async (id: bigint) => {
