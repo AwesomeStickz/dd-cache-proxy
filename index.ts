@@ -793,16 +793,6 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         // Set approximate member count as member count if payload is from API
         if (payload.approximate_member_count && (options.desiredProps?.guild as (keyof Guild)[])?.includes('memberCount')) (args as unknown as Guild).memberCount = payload.approximate_member_count;
 
-        if (payload.members) {
-            for (const member of payload.members) {
-                if (member.user) {
-                    // TODO: why??
-                    bot.transformers.member(bot, member, { guildId: guild.id as Guild['id'], userId: BigInt(member.user.id) });
-                    bot.transformers.user(bot, member.user);
-                }
-            }
-        }
-
         // Add to memory
         bot.cache.guilds.set(args);
 
