@@ -1056,7 +1056,7 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
          */
         user?: (userId: bigint, user?: FilteredProxyCacheTypes<T, Props, Behavior>['user']) => Promise<CacheScope>;
     };
-    /** The duration (in milliseconds) after which pending guild data should be considered inactive and deleted. */
+    /** The duration (in milliseconds) after which pending guild data should be considered inactive and deleted. Default: 30 seconds */
     pendingGuildDataInactiveDuration?: number;
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
