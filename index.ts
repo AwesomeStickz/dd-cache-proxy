@@ -208,12 +208,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!options.cacheOutsideMemory?.guild || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('guild', guildId);
+            if (!stored) return;
 
-            if (stored) {
-                stored.lastInteractedTime = Date.now();
-
-                if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) bot.cache.guilds.memory.set(guildId, stored);
-            }
+            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) await bot.cache.guilds.set(stored, true, CacheScope.Memory);
 
             return stored;
         },
@@ -327,12 +324,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!options.cacheOutsideMemory?.user || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('user', userId);
+            if (!stored) return;
 
-            if (stored) {
-                stored.lastInteractedTime = Date.now();
-
-                if (options.cacheInMemory?.user) bot.cache.users.memory.set(userId, stored);
-            }
+            if (options.cacheInMemory?.user && cacheScope & CacheScope.Memory) await bot.cache.users.set(stored, true, CacheScope.Memory);
 
             return stored;
         },
@@ -406,12 +400,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!options.cacheOutsideMemory?.role || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('role', roleId, guildId);
+            if (!stored) return;
 
-            if (stored) {
-                stored.lastInteractedTime = Date.now();
-
-                if (options.cacheInMemory?.role) bot.cache.guilds.memory.get(guildId)?.roles?.set(roleId, stored);
-            }
+            if (options.cacheInMemory?.role && cacheScope & CacheScope.Memory) await bot.cache.roles.set(stored, true, CacheScope.Memory);
 
             return stored;
         },
@@ -508,12 +499,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!options.cacheOutsideMemory?.member || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('member', memberId, guildId);
+            if (!stored) return;
 
-            if (stored) {
-                stored.lastInteractedTime = Date.now();
-
-                if (options.cacheInMemory?.member) bot.cache.guilds.memory.get(guildId)?.members?.set(memberId, stored);
-            }
+            if (options.cacheInMemory?.member && cacheScope & CacheScope.Memory) await bot.cache.members.set(stored, true, CacheScope.Memory);
 
             return stored;
         },
@@ -623,12 +611,9 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!options.cacheOutsideMemory?.channel || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('channel', channelId, guildId);
+            if (!stored) return;
 
-            if (stored) {
-                stored.lastInteractedTime = Date.now();
-
-                if (options.cacheInMemory?.channel) bot.cache.channels.memory.set(channelId, stored);
-            }
+            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) await bot.cache.channels.set(stored, true, CacheScope.Memory);
 
             return stored;
         },
