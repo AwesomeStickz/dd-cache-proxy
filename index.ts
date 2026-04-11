@@ -90,6 +90,27 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         }
     >();
 
+    setInterval(() => {
+        const now = Date.now();
+        const inactiveDuration = bot.cache.options.pendingGuildDataInactiveDuration ?? 1000 * 30;
+
+        for (const [id, pendingGuildData] of pendingGuildsData.entries()) {
+            for (const channel of pendingGuildData.channels?.values() || []) {
+                if (now - channel.lastInteractedTime > inactiveDuration) pendingGuildData.channels?.delete((channel as unknown as Channel).id);
+            }
+
+            for (const member of pendingGuildData.members?.values() || []) {
+                if (now - member.lastInteractedTime > inactiveDuration) pendingGuildData.members?.delete((member as unknown as Member).id);
+            }
+
+            for (const role of pendingGuildData.roles?.values() || []) {
+                if (now - role.lastInteractedTime > inactiveDuration) pendingGuildData.roles?.delete((role as unknown as Role).id);
+            }
+
+            if (!pendingGuildData.channels?.size && !pendingGuildData.members?.size && !pendingGuildData.roles?.size) pendingGuildsData.delete(id); // if there's no pending data left for this guild, we can delete this pending guild data
+        }
+    }, 1000 * 30);
+
     // Set default values for cacheInMemory and cacheOutsideMemory, true for in-memory and false for outside memory if not overriden by user
     const cacheInMemoryDefault = bot.cache.options.cacheInMemory?.default ?? true;
     const cacheOutsideMemoryDefault = bot.cache.options.cacheOutsideMemory?.default ?? false;
@@ -1035,6 +1056,8 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
          */
         user?: (userId: bigint, user?: FilteredProxyCacheTypes<T, Props, Behavior>['user']) => Promise<CacheScope>;
     };
+    /** The duration (in milliseconds) after which pending guild data should be considered inactive and deleted. */
+    pendingGuildDataInactiveDuration?: number;
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {
         /** The interval (in milliseconds) at which the cache sweeper should run the provided filter functions. */
