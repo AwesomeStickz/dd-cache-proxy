@@ -18,36 +18,47 @@ type FilteredProxyCacheTypes<T extends ProxyCacheTypes<Props, Behavior>, Props e
         : FilterProps<T[P], O['desiredProps'] extends Record<P, (keyof T[P])[]> ? O['desiredProps'][P][number] : keyof T[P], O['undesiredProps'] extends Record<P, (keyof T[P])[]> ? O['undesiredProps'][P][number] : never>;
 };
 
+export enum CacheScope {
+    /** Do not cache. */
+    DoNotCache = 0,
+    /** Cache in memory only. */
+    Memory = 1,
+    /** Cache outside memory only. */
+    OutsideMemory = 2,
+    /** Cache in both memory and outside memory. */
+    MemoryAndOutsideMemory = 3,
+}
+
 export interface ProxyCacheProps<T extends ProxyCacheTypes<DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior>, DiscordenoDesiredProps extends TransformersDesiredProperties, DiscordenoDesiredPropsBehavior extends DesiredPropertiesBehavior, O extends CreateProxyCacheOptions<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior>> {
     cache: {
         options: CreateProxyCacheOptions<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior>;
         channels: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel']>;
-            get: (id: bigint, guildId?: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint, guildId?: bigint) => Promise<void>;
+            get: (id: bigint, guildId?: bigint, cacheScope?: CacheScope) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'], replaceCurrentValue?: boolean, cacheScope?: CacheScope) => Promise<void>;
+            delete: (id: bigint, guildId?: bigint, cacheScope?: CacheScope) => Promise<void>;
         };
         guilds: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild']>;
-            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint) => Promise<void>;
+            get: (id: bigint, cacheScope?: CacheScope) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['guild'], replaceCurrentValue?: boolean, cacheScope?: CacheScope) => Promise<void>;
+            delete: (id: bigint, cacheScope?: CacheScope) => Promise<void>;
         };
         members: {
-            get: (id: bigint, guildId: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint, guildId: bigint) => Promise<void>;
+            get: (id: bigint, guildId: bigint, cacheScope?: CacheScope) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['member'], replaceCurrentValue?: boolean, cacheScope?: CacheScope) => Promise<void>;
+            delete: (id: bigint, guildId: bigint, cacheScope?: CacheScope) => Promise<void>;
         };
         roles: {
-            get: (id: bigint, guildId: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint, guildId: bigint) => Promise<void>;
+            get: (id: bigint, guildId: bigint, cacheScope?: CacheScope) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['role'], replaceCurrentValue?: boolean, cacheScope?: CacheScope) => Promise<void>;
+            delete: (id: bigint, guildId: bigint, cacheScope?: CacheScope) => Promise<void>;
         };
         users: {
             memory: Collection<bigint, FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user']>;
-            get: (id: bigint) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user'] | undefined>;
-            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user'], replaceCurrentValue?: boolean) => Promise<void>;
-            delete: (id: bigint) => Promise<void>;
+            get: (id: bigint, cacheScope?: CacheScope) => Promise<FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user'] | undefined>;
+            set: (value: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['user'], replaceCurrentValue?: boolean, cacheScope?: CacheScope) => Promise<void>;
+            delete: (id: bigint, cacheScope?: CacheScope) => Promise<void>;
         };
         $inferredTypes: {
             channel: FilteredProxyCacheTypes<T, DiscordenoDesiredProps, DiscordenoDesiredPropsBehavior, O>['channel'];
@@ -176,9 +187,15 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
     bot.cache.guilds = {
         memory: new Collection(),
-        get: async (guildId) => {
+        get: async (guildId, cacheScope) => {
+            // Determine where this guild is cached
+            cacheScope ??= (await options.cacheScope?.guild?.(guildId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this guild
+            if (!cacheScope) return;
+
             // If available in memory, use it.
-            if (options.cacheInMemory?.guild) {
+            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) {
                 const guild = bot.cache.guilds.memory.get(guildId);
                 if (guild) {
                     guild.lastInteractedTime = Date.now();
@@ -188,25 +205,28 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.guild || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.guild || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('guild', guildId);
 
             if (stored) {
                 stored.lastInteractedTime = Date.now();
 
-                if (options.cacheInMemory?.guild) bot.cache.guilds.memory.set(guildId, stored);
+                if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) bot.cache.guilds.memory.set(guildId, stored);
             }
 
             return stored;
         },
-        set: async (guild, replaceCurrentValue = false) => {
-            // Should this be cached or not?
-            if (options.shouldCache?.guild && !(await options.shouldCache.guild(guild))) return;
+        set: async (guild, replaceCurrentValue = false, cacheScope) => {
+            // Determine where to cache this guild
+            cacheScope ??= (await options.cacheScope?.guild?.((guild as unknown as Guild).id, guild)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this guild
+            if (!cacheScope) return;
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
-                const oldGuild = await bot.cache.guilds.get((guild as unknown as Guild).id);
+                const oldGuild = await bot.cache.guilds.get((guild as unknown as Guild).id, cacheScope);
 
                 // If we have the old guild, we merge the new data with the old data
                 if (oldGuild) {
@@ -262,27 +282,39 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             guild.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.guild) bot.cache.guilds.memory.set((guild as unknown as Guild).id, guild);
+            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) bot.cache.guilds.memory.set((guild as unknown as Guild).id, guild);
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.guild && options.setItem) await options.setItem('guild', guild);
+            if (options.cacheOutsideMemory?.guild && options.setItem && cacheScope & CacheScope.OutsideMemory) await options.setItem('guild', guild);
         },
-        delete: async (guildId) => {
+        delete: async (guildId, cacheScope) => {
+            // Determine where this guild is cached
+            cacheScope ??= (await options.cacheScope?.guild?.(guildId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this guild
+            if (!cacheScope) return;
+
             // Handle bulk removal of channels
             await options.bulk?.removeGuild?.(guildId);
 
             // Remove from memory
-            bot.cache.guilds.memory.delete(guildId);
+            if (cacheScope & CacheScope.Memory) bot.cache.guilds.memory.delete(guildId);
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('guild', guildId);
+            if (options.removeItem && cacheScope & CacheScope.OutsideMemory) await options.removeItem('guild', guildId);
         },
     };
 
     bot.cache.users = {
         memory: new Collection(),
-        get: async (userId) => {
+        get: async (userId, cacheScope) => {
+            // Determine where this user is cached
+            cacheScope ??= (await options.cacheScope?.user?.(userId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this user
+            if (!cacheScope) return;
+
             // If available in memory, use it.
-            if (options.cacheInMemory?.user) {
+            if (options.cacheInMemory?.user && cacheScope & CacheScope.Memory) {
                 const user = bot.cache.users.memory.get(userId);
                 if (user) {
                     user.lastInteractedTime = Date.now();
@@ -292,7 +324,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.user || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.user || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('user', userId);
 
@@ -304,12 +336,16 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (user, replaceCurrentValue = false) => {
-            if (options.shouldCache?.user && !(await options.shouldCache.user(user))) return;
+        set: async (user, replaceCurrentValue = false, cacheScope) => {
+            // Determine where to cache this user
+            cacheScope ??= (await options.cacheScope?.user?.((user as unknown as User).id, user)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this user
+            if (!cacheScope) return;
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
-                const oldUser = await bot.cache.users.get((user as unknown as User).id);
+                const oldUser = await bot.cache.users.get((user as unknown as User).id, cacheScope);
 
                 // If we have the old user, we merge the new data with the old data
                 if (oldUser) {
@@ -326,23 +362,35 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             user.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.user) bot.cache.users.memory.set((user as unknown as User).id, user);
+            if (options.cacheInMemory?.user && cacheScope & CacheScope.Memory) bot.cache.users.memory.set((user as unknown as User).id, user);
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.user && options.setItem) await options.setItem('user', user);
+            if (options.cacheOutsideMemory?.user && options.setItem && cacheScope & CacheScope.OutsideMemory) await options.setItem('user', user);
         },
-        delete: async (userId) => {
+        delete: async (userId, cacheScope) => {
+            // Determine where this user is cached
+            cacheScope ??= (await options.cacheScope?.user?.(userId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this user
+            if (!cacheScope) return;
+
             // Remove from memory
-            bot.cache.users.memory.delete(userId);
+            if (cacheScope & CacheScope.Memory) bot.cache.users.memory.delete(userId);
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('user', userId);
+            if (options.removeItem && cacheScope & CacheScope.OutsideMemory) await options.removeItem('user', userId);
         },
     };
 
     bot.cache.roles = {
-        get: async (roleId, guildId) => {
+        get: async (roleId, guildId, cacheScope) => {
+            // Determine where this role is cached
+            cacheScope ??= (await options.cacheScope?.role?.(roleId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this role
+            if (!cacheScope) return;
+
             // If available in memory, use it.
-            if (options.cacheInMemory?.role) {
+            if (options.cacheInMemory?.role && cacheScope & CacheScope.Memory) {
                 // If guilds are cached, roles will be inside them
                 if (options.cacheInMemory?.guild) {
                     const role = bot.cache.guilds.memory.get(guildId)?.roles?.get(roleId);
@@ -355,7 +403,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.role || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.role || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('role', roleId, guildId);
 
@@ -367,14 +415,18 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (internalRole, replaceCurrentValue = false) => {
-            if (options.shouldCache?.role && !(await options.shouldCache.role(internalRole))) return;
+        set: async (internalRole, replaceCurrentValue = false, cacheScope) => {
+            // Determine where to cache this role
+            cacheScope ??= (await options.cacheScope?.role?.((internalRole as unknown as Role).id, internalRole)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this role
+            if (!cacheScope) return;
 
             const role = internalRole as unknown as Role;
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
-                const oldRole = await bot.cache.roles.get(role.id, role.guildId);
+                const oldRole = await bot.cache.roles.get(role.id, role.guildId, cacheScope);
 
                 // If we have the old role, we merge the new data with the old data
                 if (oldRole) {
@@ -391,7 +443,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             internalRole.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.role) {
+            if (options.cacheInMemory?.role && cacheScope & CacheScope.Memory) {
                 if (options.cacheInMemory?.guild) {
                     if (!role.guildId) return console.warn(`[CACHE] Can't cache role(${role.id}) since guild.roles is enabled but a guild id was not found.`);
 
@@ -411,24 +463,36 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.role && options.setItem) await options.setItem('role', internalRole);
+            if (options.cacheOutsideMemory?.role && options.setItem && cacheScope & CacheScope.OutsideMemory) await options.setItem('role', internalRole);
         },
-        delete: async (roleId, guildId) => {
+        delete: async (roleId, guildId, cacheScope) => {
+            // Determine where this role is cached
+            cacheScope ??= (await options.cacheScope?.role?.(roleId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this role
+            if (!cacheScope) return;
+
             // Handle bulk removal of member roles
-            await options.bulk?.removeRole?.(roleId, guildId);
+            if (cacheScope & CacheScope.Memory) await options.bulk?.removeRole?.(roleId, guildId);
 
             // Remove from memory
             bot.cache.guilds.memory.get(guildId)?.roles?.delete(roleId);
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('role', roleId, guildId);
+            if (options.removeItem && cacheScope & CacheScope.OutsideMemory) await options.removeItem('role', roleId, guildId);
         },
     };
 
     bot.cache.members = {
-        get: async (memberId, guildId) => {
+        get: async (memberId, guildId, cacheScope) => {
+            // Determine where this member is cached
+            cacheScope ??= (await options.cacheScope?.member?.(memberId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this member
+            if (!cacheScope) return;
+
             // If available in memory, use it.
-            if (options.cacheInMemory?.member) {
+            if (options.cacheInMemory?.member && cacheScope & CacheScope.Memory) {
                 // If guilds are cached, members will be inside them
                 if (options.cacheInMemory?.guild) {
                     const member = bot.cache.guilds.memory.get(guildId)?.members?.get(memberId);
@@ -441,7 +505,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.member || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.member || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('member', memberId, guildId);
 
@@ -453,14 +517,18 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (internalMember, replaceCurrentValue = false) => {
-            if (options.shouldCache?.member && !(await options.shouldCache.member(internalMember))) return;
+        set: async (internalMember, replaceCurrentValue = false, cacheScope) => {
+            // Determine where to cache this member
+            cacheScope ??= (await options.cacheScope?.member?.((internalMember as unknown as Member).id, internalMember)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this member
+            if (!cacheScope) return;
 
             const member = internalMember as unknown as Member;
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue && member.guildId) {
-                const oldRole = await bot.cache.members.get(member.id, member.guildId);
+                const oldRole = await bot.cache.members.get(member.id, member.guildId, cacheScope);
 
                 // If we have the old member, we merge the new data with the old data
                 if (oldRole) {
@@ -477,7 +545,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             internalMember.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.member) {
+            if (options.cacheInMemory?.member && cacheScope & CacheScope.Memory) {
                 if (options.cacheInMemory?.guild) {
                     if (member.guildId) {
                         const guild = bot.cache.guilds.memory.get(member.guildId);
@@ -495,22 +563,34 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 }
             }
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.member && options.setItem) await options.setItem('member', internalMember);
+            if (options.cacheOutsideMemory?.member && options.setItem && cacheScope & CacheScope.OutsideMemory) await options.setItem('member', internalMember);
         },
-        delete: async (memberId, guildId) => {
+        delete: async (memberId, guildId, cacheScope) => {
+            // Determine where this member is cached
+            cacheScope ??= (await options.cacheScope?.member?.(memberId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this member
+            if (!cacheScope) return;
+
             // Remove from memory
-            bot.cache.guilds.memory.get(guildId)?.members?.delete(memberId);
+            if (cacheScope & CacheScope.Memory) bot.cache.guilds.memory.get(guildId)?.members?.delete(memberId);
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('member', memberId, guildId);
+            if (options.removeItem && cacheScope & CacheScope.OutsideMemory) await options.removeItem('member', memberId, guildId);
         },
     };
 
     bot.cache.channels = {
         memory: new Collection(),
-        get: async (channelId, guildId) => {
+        get: async (channelId, guildId, cacheScope) => {
+            // Determine where this channel is cached
+            cacheScope ??= (await options.cacheScope?.channel?.(channelId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this channel
+            if (!cacheScope) return;
+
             // If available in memory, use it.
-            if (options.cacheInMemory?.channel) {
+            if (options.cacheInMemory?.channel && cacheScope & CacheScope.Memory) {
                 // If guilds are cached, channels will be inside them
                 if (options.cacheInMemory?.guild) {
                     if (guildId) {
@@ -540,7 +620,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // Otherwise try to get from non-memory cache
-            if (!options.cacheOutsideMemory?.channel || !options.getItem) return;
+            if (!options.cacheOutsideMemory?.channel || !options.getItem || !(cacheScope & CacheScope.OutsideMemory)) return;
 
             const stored = await options.getItem('channel', channelId, guildId);
 
@@ -552,14 +632,18 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
             return stored;
         },
-        set: async (internalChannel, replaceCurrentValue = false) => {
-            if (options.shouldCache?.channel && !(await options.shouldCache.channel(internalChannel))) return;
+        set: async (internalChannel, replaceCurrentValue = false, cacheScope) => {
+            // Determine where to cache this channel
+            cacheScope ??= (await options.cacheScope?.channel?.((internalChannel as unknown as Channel).id, internalChannel)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this channel
+            if (!cacheScope) return;
 
             const channel = internalChannel as unknown as Channel;
 
             // If we are not replacing the current value, we merge the new data with the old data because new one may be partial
             if (!replaceCurrentValue) {
-                const oldChannel = await bot.cache.channels.get(channel.id, channel.guildId);
+                const oldChannel = await bot.cache.channels.get(channel.id, channel.guildId, cacheScope);
 
                 // If we have the old channel, we merge the new data with the old data
                 if (oldChannel) {
@@ -576,7 +660,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             internalChannel.lastInteractedTime = Date.now();
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.channel) {
+            if (options.cacheInMemory?.channel && cacheScope & CacheScope.Memory) {
                 if (options.cacheInMemory?.guild) {
                     const guildId = channel.guildId;
 
@@ -597,18 +681,26 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             }
 
             // If user wants non-memory cache, we cache it
-            if (options.cacheOutsideMemory?.channel && options.setItem) await options.setItem('channel', internalChannel);
+            if (options.cacheOutsideMemory?.channel && options.setItem && cacheScope & CacheScope.OutsideMemory) await options.setItem('channel', internalChannel);
         },
-        delete: async (channelId, guildId) => {
+        delete: async (channelId, guildId, cacheScope) => {
+            // Determine where this channel is cached
+            cacheScope ??= (await options.cacheScope?.channel?.(channelId)) ?? CacheScope.MemoryAndOutsideMemory;
+
+            // Return if user doesn't want to cache this channel
+            if (!cacheScope) return;
+
             // Handle bulk removal of threads within the channel
             await options.bulk?.removeChannel?.(channelId, guildId);
 
             // Remove from memory
-            bot.cache.channels.memory.delete(channelId);
-            bot.cache.guilds.memory.get(guildId || 0n)?.channels?.delete(channelId);
+            if (cacheScope & CacheScope.Memory) {
+                bot.cache.channels.memory.delete(channelId);
+                bot.cache.guilds.memory.get(guildId || 0n)?.channels?.delete(channelId);
+            }
 
             // Remove from non-memory cache
-            if (options.removeItem) await options.removeItem('channel', channelId, guildId);
+            if (options.removeItem && cacheScope & CacheScope.OutsideMemory) await options.removeItem('channel', channelId, guildId);
         },
     };
 
@@ -925,18 +1017,38 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
             role?: boolean;
         };
     };
-    /** Configure the handlers that should be ran whenever something is about to be cached to determine whether it should or should not be cached. */
-    shouldCache?: {
-        /** Handler to check whether or not to cache this channel. */
-        channel?: (channel: FilteredProxyCacheTypes<T, Props, Behavior>['channel']) => Promise<boolean>;
-        /** Handler to check whether or not to cache this guild. */
-        guild?: (guild: FilteredProxyCacheTypes<T, Props, Behavior>['guild']) => Promise<boolean>;
-        /** Handler to check whether or not to cache this member. */
-        member?: (member: FilteredProxyCacheTypes<T, Props, Behavior>['member']) => Promise<boolean>;
-        /** Handler to check whether or not to cache this role. */
-        role?: (role: FilteredProxyCacheTypes<T, Props, Behavior>['role']) => Promise<boolean>;
-        /** Handler to check whether or not to cache this user. */
-        user?: (user: FilteredProxyCacheTypes<T, Props, Behavior>['user']) => Promise<boolean>;
+    /** Configure the handlers that should be ran whenever an object is about to be cached to determine where to cache it (in-memory, outside memory, or both), or whether to cache it at all. */
+    cacheScope?: {
+        /**
+         * Handler to check where to cache this channel (in-memory, outside memory or both), or whether to cache it at all.
+         *
+         * **Note:** Channel object is only present when called from channels.set().
+         */
+        channel?: (channelId: bigint, channel?: FilteredProxyCacheTypes<T, Props, Behavior>['channel']) => Promise<CacheScope>;
+        /**
+         * Handler to check where to cache this guild (in-memory, outside memory or both), or whether to cache it at all.
+         *
+         * **Note:** Guild object is only present when called from guilds.set().
+         */
+        guild?: (guildId: bigint, guild?: FilteredProxyCacheTypes<T, Props, Behavior>['guild']) => Promise<CacheScope>;
+        /**
+         * Handler to check where to cache this member (in-memory, outside memory or both), or whether to cache it at all.
+         *
+         * **Note:** Member object is only present when called from members.set().
+         */
+        member?: (memberId: bigint, member?: FilteredProxyCacheTypes<T, Props, Behavior>['member']) => Promise<CacheScope>;
+        /**
+         * Handler to check where to cache this role (in-memory, outside memory or both), or whether to cache it at all.
+         *
+         * **Note:** Role object is only present when called from roles.set().
+         */
+        role?: (roleId: bigint, role?: FilteredProxyCacheTypes<T, Props, Behavior>['role']) => Promise<CacheScope>;
+        /**
+         * Handler to check where to cache this user (in-memory, outside memory or both), or whether to cache it at all.
+         *
+         * **Note:** User object is only present when called from users.set().
+         */
+        user?: (userId: bigint, user?: FilteredProxyCacheTypes<T, Props, Behavior>['user']) => Promise<CacheScope>;
     };
     /** Options for cache sweeper. This works for in-memory cache only. For outside memory cache, you should implement your own sweeper. */
     sweeper?: {

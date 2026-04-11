@@ -98,18 +98,32 @@ Now you can import `CachedGuild` in your code and use it.
 
 # Useful Options To Note:
 
-### `options.shouldCache`:
+### `options.cacheScope`:
 
-This is a property with which you can conditionally cache only certain objects and leave out the others. For example, if you only want to cache guild channels, you can simply do:
+This options allows you to tell the cache proxy where to cache an object. Return `0` to not cache it, `1` to cache in memory, `2` to cache outside memory, `3` to cache in both memory and outside memory.
+
+Example:
 
 ```js
-shouldCache: {
-    channel: async (channel) => {
-        if (channel.guildId) return true;
-        else return false;
+import { CacheScope } from 'dd-cache-proxy';
+
+cacheScope: {
+    channel: async (channelId, channel) => {
+        // If it's a guild channel, cache in both memory and outside memory
+        if (channel.guildId) return CacheScope.MemoryAndOutsideMemory;
+        // Otherwise, do not cache it
+        return CacheScope.DoNotCache;
     },
+    member: async (memberId) => {
+        // If it's bot member, cache in both memory and outside memory
+        if (memberId === bot.id) return CacheScope.MemoryAndOutsideMemory;
+        // Otherwise, cache only in memory
+        return CacheScope.Memory;
+    }
 }
 ```
+
+Note: In these functions, object id (first parameter) is always passed in all three functions (get, set, and delete) but the object (second parameter) itself is only passed in set() function.
 
 ### `options.bulk`:
 
