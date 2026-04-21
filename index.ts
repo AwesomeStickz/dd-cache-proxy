@@ -174,7 +174,39 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
         },
     };
 
+    const internalGuildMutators = {
+        incrementMemberCount: async (guildId: bigint) => {
+            if (!options.cacheInMemory?.guild) return;
+
+            if (bot.cache.options.desiredProps?.guild && !bot.cache.options.desiredProps.guild.includes('memberCount' as (typeof bot.cache.options.desiredProps.guild)[number])) return;
+            if (bot.cache.options.undesiredProps?.guild && bot.cache.options.undesiredProps.guild.includes('memberCount' as (typeof bot.cache.options.undesiredProps.guild)[number])) return;
+
+            const guild = await bot.cache.guilds.get(guildId);
+
+            if (guild) {
+                if ('memberCount' in guild) (guild.memberCount as Guild['memberCount'])++;
+
+                await bot.cache.guilds.set(guild);
+            }
+        },
+        decrementMemberCount: async (guildId: bigint) => {
+            if (!options.cacheInMemory?.guild) return;
+
+            if (bot.cache.options.desiredProps?.guild && !bot.cache.options.desiredProps.guild.includes('memberCount' as (typeof bot.cache.options.desiredProps.guild)[number])) return;
+            if (bot.cache.options.undesiredProps?.guild && bot.cache.options.undesiredProps.guild.includes('memberCount' as (typeof bot.cache.options.undesiredProps.guild)[number])) return;
+
+            const guild = await bot.cache.guilds.get(guildId);
+
+            if (guild) {
+                if ('memberCount' in guild) (guild.memberCount as Guild['memberCount'])--;
+
+                await bot.cache.guilds.set(guild);
+            }
+        },
+    };
+
     if (!bot.cache.options.bulk) bot.cache.options.bulk = {};
+    if (!bot.cache.options.guildMutators) bot.cache.options.guildMutators = {};
 
     // Get bulk removers passed by user, data about which internal removers to replace
     const { removeChannel, removeGuild, removeRole } = bot.cache.options.bulk;
@@ -207,6 +239,30 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!replaceInternalBulkRemover?.role) await internalBulkRemover.removeRole(id, guildId);
             // If user passed bulk.removeRole, run passed bulk remover
             await removeRole?.(id, guildId);
+        };
+    }
+
+    // Get guild mutators passed by user, data about which internal guild mutators to replace
+    const { incrementMemberCount, decrementMemberCount } = bot.cache.options.guildMutators;
+    const { replaceInternalGuildMutators } = bot.cache.options.guildMutators;
+
+    // If user passed guildMutators.incrementMemberCount else if replaceInternalGuildMutators.incrementMemberCount is not set to true
+    if (incrementMemberCount || !replaceInternalGuildMutators?.incrementMemberCount) {
+        bot.cache.options.guildMutators.incrementMemberCount = async (guildId) => {
+            // If replaceInternalGuildMutators.incrementMemberCount is not set to true, run internal member count incrementer
+            if (!replaceInternalGuildMutators?.incrementMemberCount) await internalGuildMutators.incrementMemberCount(guildId);
+            // If user passed guildMutators.incrementMemberCount, run passed member count incrementer
+            await incrementMemberCount?.(guildId);
+        };
+    }
+
+    // If user passed guildMutators.decrementMemberCount else if replaceInternalGuildMutators.decrementMemberCount is not set to true
+    if (decrementMemberCount || !replaceInternalGuildMutators?.decrementMemberCount) {
+        bot.cache.options.guildMutators.decrementMemberCount = async (guildId) => {
+            // If replaceInternalGuildMutators.decrementMemberCount is not set to true, run internal member count decrementer
+            if (!replaceInternalGuildMutators?.decrementMemberCount) await internalGuildMutators.decrementMemberCount(guildId);
+            // If user passed guildMutators.decrementMemberCount, run passed member count decrementer
+            await decrementMemberCount?.(guildId);
         };
     }
 
@@ -992,21 +1048,21 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
     /** Handler to delete an object in a specific table. */
     removeItem?: <K extends keyof T>(...args: [table: Exclude<K, 'channel' | 'member' | 'role'>, id: bigint] | [table: Extract<K, 'member' | 'role'>, id: bigint, guildId: bigint] | [table: 'channel', id: bigint, guildId?: bigint]) => Promise<unknown>;
     /**
-     * Options for handling the removal of objects that may trigger bulk modifications or deletions of associated entities.
+     * Options for handling the removal of objects that may trigger bulk modifications or deletions of associated objects.
      *
      * This allows for performance optimization by consolidating multiple operations into a single action, rather than executing hundreds of queries.
      */
     bulk?: {
-        /** Handler for the removal of channels and their associated entities (e.g., threads within the channel). */
+        /** Handler for the removal of channels and their associated objects (e.g., threads within the channel). */
         removeChannel?: (id: bigint, guildId?: bigint) => Promise<unknown>;
-        /** Handler for the removal of guilds and their associated entities (e.g., channels, members and roles). */
+        /** Handler for the removal of guilds and their associated objects (e.g., channels, members and roles). */
         removeGuild?: (id: bigint) => Promise<unknown>;
-        /** Handler for the removal of roles and their associated entities (e.g., members having this role). */
+        /** Handler for the removal of roles and their associated objects (e.g., members having this role). */
         removeRole?: (id: bigint, guildId: bigint) => Promise<unknown>;
         /**
          * Options to choose whether or not to replace internal removers.
          *
-         * By default, the proxy will handle the bulk modifications and deletions of associated entities from in-memory cache. You can override this behavior by setting this option to `true`.
+         * By default, the proxy will handle the bulk modifications and deletions of associated objects from in-memory cache. You can override this behavior by setting this option to `true`.
          */
         replaceInternalBulkRemover?: {
             /** Whether or not to replace the internal channel remover. */
@@ -1049,6 +1105,28 @@ export interface CreateProxyCacheOptions<T extends ProxyCacheTypes<Props, Behavi
          * **Note:** User object is only present when called from users.set().
          */
         user?: (userId: bigint, user?: FilteredProxyCacheTypes<T, Props, Behavior>['user']) => Promise<CacheScope>;
+    };
+    /**
+     * Options for handling the modification of guild data without fetching the entire guild object, such as incrementing or decrementing the member count when a member joins or leaves a guild.
+     *
+     * This allows for performance optimization by avoiding the need to fetch and update the entire guild object for simple modifications, thus reducing overhead and improving efficiency when caching outside memory.
+     */
+    guildMutators?: {
+        /** Handler to increment the member count of a guild. */
+        incrementMemberCount?: (guildId: bigint) => Promise<unknown>;
+        /** Handler to decrement the member count of a guild. */
+        decrementMemberCount?: (guildId: bigint) => Promise<unknown>;
+        /**
+         * Options to choose whether or not to replace internal guild mutators.
+         *
+         * By default, the proxy will handle the increment and decrement of member count from in-memory cache. You can override this behavior by setting this option to `true`.
+         */
+        replaceInternalGuildMutators?: {
+            /** Whether or not to replace the internal member count incrementer. */
+            incrementMemberCount?: boolean;
+            /** Whether or not to replace the internal member count decrementer. */
+            decrementMemberCount?: boolean;
+        };
     };
     /** The duration (in milliseconds) after which pending guild data should be considered inactive and deleted. Default: 30 seconds */
     pendingGuildDataInactiveDuration?: number;

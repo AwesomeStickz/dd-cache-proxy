@@ -127,7 +127,7 @@ Note: In these functions, object id (first parameter) is always passed in all th
 
 ### `options.bulk`:
 
-This option allows you to specify how to handle the removal of objects that may trigger bulk modifications or deletions of associated entities.
+This option allows you to specify how to handle the removal of objects that may trigger bulk modifications or deletions of associated objects.
 
 For example, if you store guild channels individually in a database separate from the guild itself, deleting a guild could result in each channel being deleted one by one through individual queries. This method can be inefficient, especially as the number of channels increases. To improve permformance, you can use `options.bulk.removeGuild` to remove the guild and all associated channels in a single query.
 
@@ -143,6 +143,21 @@ This provides the following props: (should be self explanatory with intellisense
 -   `removeChannel` - This should remove the channel and all the thread channels that are in this channel.
 -   `removeGuild` - This should remove the guild, all the channels, members, roles that are in this guild.
 -   `removeRole` - This should remove the role and remove it from the role list of every member who has it.
+
+### `options.guildMutators`:
+
+This option allows you to edit guild data without fetching the entire guild object, such as incrementing or decrementing the member count when a member joins or leaves a guild. This allows for performance optimization by avoiding the need to fetch and update the entire guild object for simple modifications, thus reducing overhead and improving efficiency when caching outside memory.
+
+This provides the following props: (should be self explanatory with intellisense)
+
+-  `options.guildMutators.incrementMemberCount`
+-  `options.guildMutators.decrementMemberCount`
+-  `options.guildMutators.replaceInternalGuildMutators` - To set props under this prop to tell the cache proxy whether or not to run internal guild mutators.
+
+#### Note: If you cache outside memory, you must handle guild data modifications yourself, otherwise they will **NOT** be modified. The following are the guild mutator functions and the actions they should perform:
+
+-   `incrementMemberCount` - This should increment the member count of the guild by 1.
+-   `decrementMemberCount` - This should decrement the member count of the guild by 1.
 
 ### `options.sweeper`:
 
