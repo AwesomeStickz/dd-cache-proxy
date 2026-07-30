@@ -694,7 +694,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             const stored = await options.getItem('channel', channelId, guildId);
             if (!stored) return;
 
-            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) await bot.cache.channels.set(stored, true, CacheScope.Memory);
+            if (options.cacheInMemory?.channel && cacheScope & CacheScope.Memory) await bot.cache.channels.set(stored, true, CacheScope.Memory);
 
             return stored;
         },
