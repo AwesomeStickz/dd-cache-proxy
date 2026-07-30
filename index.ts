@@ -323,9 +323,10 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (pendingGuildData) {
                 pendingGuildsData.delete((guild as unknown as Guild).id);
 
-                if (pendingGuildData.channels?.size) guild.channels = new Collection([...(guild.channels || []), ...pendingGuildData.channels]);
-                if (pendingGuildData.members?.size) guild.members = new Collection([...(guild.members || []), ...pendingGuildData.members]);
-                if (pendingGuildData.roles?.size) guild.roles = new Collection([...(guild.roles || []), ...pendingGuildData.roles]);
+                // Pending entries were buffered before this payload arrived, so the payload is the fresher of the two and has to win
+                if (pendingGuildData.channels?.size) guild.channels = new Collection([...pendingGuildData.channels, ...(guild.channels || [])]);
+                if (pendingGuildData.members?.size) guild.members = new Collection([...pendingGuildData.members, ...(guild.members || [])]);
+                if (pendingGuildData.roles?.size) guild.roles = new Collection([...pendingGuildData.roles, ...(guild.roles || [])]);
             }
 
             // Update last interacted time all channels, members and roles that don't have it set
