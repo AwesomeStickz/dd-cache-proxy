@@ -318,10 +318,11 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 }
             }
 
-            const pendingGuildData = pendingGuildsData.get((guild as unknown as Guild).id);
+            const guildId = (guild as unknown as Guild).id;
+            const pendingGuildData = pendingGuildsData.get(guildId);
 
             if (pendingGuildData) {
-                pendingGuildsData.delete((guild as unknown as Guild).id);
+                pendingGuildsData.delete(guildId);
 
                 // Pending entries were buffered before this payload arrived, so the payload is the fresher of the two and has to win
                 if (pendingGuildData.channels?.size) guild.channels = new Collection([...pendingGuildData.channels, ...(guild.channels || [])]);
@@ -340,7 +341,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             guild.lastInteractedTime = now;
 
             // If user wants memory cache, we cache it
-            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) bot.cache.guilds.memory.set((guild as unknown as Guild).id, guild);
+            if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) bot.cache.guilds.memory.set(guildId, guild);
             // If user wants non-memory cache, we cache it
             if (options.cacheOutsideMemory?.guild && options.setItem && cacheScope & CacheScope.OutsideMemory) await options.setItem('guild', guild);
         },
