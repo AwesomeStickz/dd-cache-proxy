@@ -329,36 +329,15 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
                 if (pendingGuildData.roles?.size) guild.roles = new Collection([...pendingGuildData.roles, ...(guild.roles || [])]);
             }
 
-            // Update last interacted time all channels, members and roles that don't have it set
-            // NOTE: Do not recreate the objects to preserve the getters
-            if (guild.channels)
-                guild.channels = new Collection(
-                    guild.channels.array().map((channel) => {
-                        if (!channel.lastInteractedTime) channel.lastInteractedTime = Date.now();
+            const now = Date.now();
 
-                        return [(channel as unknown as Channel).id, channel];
-                    })
-                );
+            // Update last interacted time on all channels, members and roles that don't have it set
+            // NOTE: Mutate in place, do not recreate the objects so we can preserve the getters
+            if (guild.channels) for (const channel of guild.channels.values()) channel.lastInteractedTime ||= now;
+            if (guild.members) for (const member of guild.members.values()) member.lastInteractedTime ||= now;
+            if (guild.roles) for (const role of guild.roles.values()) role.lastInteractedTime ||= now;
 
-            if (guild.members)
-                guild.members = new Collection(
-                    guild.members.array().map((member) => {
-                        if (!member.lastInteractedTime) member.lastInteractedTime = Date.now();
-
-                        return [(member as unknown as Member).id, member];
-                    })
-                );
-
-            if (guild.roles)
-                guild.roles = new Collection(
-                    guild.roles.array().map((role) => {
-                        if (!role.lastInteractedTime) role.lastInteractedTime = Date.now();
-
-                        return [(role as unknown as Role).id, role];
-                    })
-                );
-
-            guild.lastInteractedTime = Date.now();
+            guild.lastInteractedTime = now;
 
             // If user wants memory cache, we cache it
             if (options.cacheInMemory?.guild && cacheScope & CacheScope.Memory) bot.cache.guilds.memory.set((guild as unknown as Guild).id, guild);
