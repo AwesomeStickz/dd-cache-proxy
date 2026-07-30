@@ -545,10 +545,10 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
             if (!cacheScope) return;
 
             // Handle bulk removal of member roles
-            if (cacheScope & CacheScope.Memory) await options.bulk?.removeRole?.(roleId, guildId);
+            await options.bulk?.removeRole?.(roleId, guildId);
 
             // Remove from memory
-            bot.cache.guilds.memory.get(guildId)?.roles?.delete(roleId);
+            if (cacheScope & CacheScope.Memory) bot.cache.guilds.memory.get(guildId)?.roles?.delete(roleId);
 
             // Remove from non-memory cache
             if (options.removeItem && cacheScope & CacheScope.OutsideMemory) await options.removeItem('role', roleId, guildId);
