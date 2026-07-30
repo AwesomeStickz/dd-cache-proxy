@@ -723,7 +723,7 @@ export const createProxyCache = <Props extends TransformersDesiredProperties, Be
 
                             pendingGuildsData.get(guildId)?.channels!.set(channel.id, internalChannel);
                         }
-                    }
+                    } else bot.cache.channels.memory.set(channel.id, internalChannel);
                 } else bot.cache.channels.memory.set(channel.id, internalChannel);
             }
 
